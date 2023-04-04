@@ -3,11 +3,14 @@ FROM $BUILD_FROM
 
 # Build PYESS 
 ARG PYESS_VERSION
-WORKDIR /usr/src
+WORKDIR /usr/share
 RUN \
     apk add --no-cache --virtual .build-dependencies \
         build-base \
         py3-pip \
         python3 \   
      && pip install pyess
-WORKDIR /
+COPY essmqtt.config /etc/essmqtt.config
+COPY essmqtt.service /systemd/system/essmqtt.service
+
+WORKDIR /usr/share
