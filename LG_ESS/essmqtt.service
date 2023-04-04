@@ -4,7 +4,7 @@ Description=ESS MQTT wrapper
 [Service]
 # all essmqtt command line arguments can be used here. it is recommended to configure essmqtt in a config file
 # for this use case
-ExecStart=<path_to_venv>/bin/essmqtt --config_file /etc/essmqtt.conf
+ExecStart=/usr/local/bin/essmqtt --config_file /etc/essmqtt.conf
 # Restart will keep the service alive for instance in case the mqtt server goes down or isn't up yet
 # when esmqqt starts
 Restart=on-failure
