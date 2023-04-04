@@ -12,6 +12,5 @@ RUN \
      && pip install pyess
 COPY essmqtt.config /etc/essmqtt.config
 COPY essmqtt.service /etc/systemd/system/essmqtt.service
-RUN  /usr/local/bin/essmqtt
 
 WORKDIR /usr/share
