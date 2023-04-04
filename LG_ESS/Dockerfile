@@ -10,7 +10,7 @@ RUN \
         py3-pip \
         python3 \   
      && pip install pyess
-COPY essmqtt.config
-COPY essmqtt.service
+COPY essmqtt.config /etc/essmqtt.config
+COPY essmqtt.service /serviced/service/essmqtt.service
 
 WORKDIR /usr/share
