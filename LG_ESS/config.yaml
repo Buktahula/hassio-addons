@@ -3,7 +3,24 @@ version: dev
 description: LG ESS for Hassio
 slug: lg_ess
 url: https://github.com/Buktahula/hassio-addons/tree/master/LG_ESS
-init: false
 arch: 
- - aarch64
+  - armhf
+  - armv7
+  - aarch64
+  - amd64
+  - i386
+host_network: true
+options:
+  ess_password:
+  mqtt_server:
+  mqtt_user:
+  mqtt_password:
+  interval_seconds:
+schema:
+  ess_password: str
+  mqtt_server: str
+  mqtt_user: str
+  mqtt_password: str
+  interval_seconds: int(0,600)?
 startup: before
+init: false
