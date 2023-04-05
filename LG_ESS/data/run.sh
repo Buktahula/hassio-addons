@@ -14,4 +14,5 @@ bashio::log.info "Initialize the essmqtt configuration..."
     interval_seconds=$(bashio::config "options.interval_seconds")
 >> "${CONFIG}"
 
-/usr/local/bin/essmqtt --config_file /etc/essmqtt.conf
+#/usr/local/bin/essmqtt --config_file /etc/essmqtt.conf
+bin/bash
