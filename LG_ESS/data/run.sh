@@ -15,4 +15,3 @@ bashio::log.info "Initialize the essmqtt configuration..."
 >> "${CONFIG}"
 
 #/usr/local/bin/essmqtt --config_file /etc/essmqtt.conf
-/bin/sh
