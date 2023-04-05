@@ -13,3 +13,4 @@ echo "interval_seconds=$(bashio::config "options.interval_seconds")" >> $CONFIG
 echo "hass_autoconfig_sensors=$(bashio::config "options.hass_autoconfig_sensors")" >> $CONFIG
 
 #/usr/local/bin/essmqtt --config_file /etc/essmqtt.conf
+ /bin/sh
