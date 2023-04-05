@@ -16,11 +16,13 @@ options:
   mqtt_user:
   mqtt_password:
   interval_seconds:
+  hass_autoconfig_sensors:
 schema:
   ess_password: str
   mqtt_server: str
   mqtt_user: str
   mqtt_password: str
   interval_seconds: int(0,600)?
+  hass_autoconfig_sensors: str
 startup: before
 init: false
