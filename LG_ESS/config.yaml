@@ -1,5 +1,5 @@
 name: LG ESS
-version: dev
+version: 0.0.1
 description: LG ESS for Hassio
 slug: lg_ess
 url: https://github.com/Buktahula/hassio-addons/tree/master/LG_ESS
