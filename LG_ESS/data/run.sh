@@ -7,7 +7,7 @@ bashio::log.info "Initialize the essmqtt configuration..."
 
 > "${CONFIG}"
 # settings
-for option in $(bashio::config 'options'); do
+for option in $(bashio::config 'options|keys'); do
     ess_password=$(bashio::config "options[${option}].ess_password")
     mqtt_server=$(bashio::config "options[${option}].mqtt_server")
     mqtt_user=$(bashio::config "options[${option}].mqtt_user")
