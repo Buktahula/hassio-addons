@@ -9,12 +9,8 @@ RUN \
         build-base \
         py3-pip \
         python3 \
-        openrc \
      && pip install pyess
 COPY data/essmqtt.config /etc/essmqtt.config
-COPY data/essmqtt.service /etc/init.d/essmqtt.service
 COPY data/run.sh /
 RUN ["chmod", "+x", "/run.sh"]
 CMD [ "/run.sh" ]
-
-WORKDIR /usr/share
