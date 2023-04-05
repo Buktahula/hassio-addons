@@ -8,9 +8,10 @@ RUN \
     apk add --no-cache --virtual .build-dependencies \
         build-base \
         py3-pip \
-        python3 \   
+        python3 \
+        openrc \
      && pip install pyess
 COPY essmqtt.config /etc/essmqtt.config
-COPY essmqtt.service /etc/systemd/system/essmqtt.service
+COPY essmqtt.service /etc/init.d/essmqtt.service
 
 WORKDIR /usr/share
