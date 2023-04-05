@@ -16,3 +16,5 @@ COPY data/essmqtt.service /etc/init.d/essmqtt.service
 COPY data/run.sh /
 RUN ["chmod", "+x", "/run.sh"]
 CMD [ "/run.sh" ]
+
+WORKDIR /usr/share
