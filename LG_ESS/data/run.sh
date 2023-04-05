@@ -4,13 +4,8 @@ set -e
 CONFIG="/etc/essmqtt.conf"
 
 bashio::log.info "Initialize the essmqtt configuration..."
-# User access
-{
-    echo "user = \"root\""
-    echo "group = \"plugdev\""
-    echo "ignoreControllerConfirmation = \"false\"" 
-} > "${CONFIG}"
 
+> "${CONFIG}"
 # settings
 for setting in $(bashio::config 'settings|setting'); do
     ess_password=$(bashio::config "settings[${setting}].ess_password")
