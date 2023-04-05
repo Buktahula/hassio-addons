@@ -7,11 +7,11 @@ bashio::log.info "Initialize the essmqtt configuration..."
 
 > "${CONFIG}"
 # settings
-for setting in $(bashio::config 'settings|setting'); do
-    ess_password=$(bashio::config "settings[${setting}].ess_password")
-    mqtt_server=$(bashio::config "settings[${setting}].mqtt_server")
-    mqtt_user=$(bashio::config "settings[${setting}].mqtt_user")
-    mqtt_password=$(bashio::config "settings[${setting}].mqtt_password")
-    interval_seconds=$(bashio::config "settings[${setting}].interval_seconds")
+for option in $(bashio::config 'options'); do
+    ess_password=$(bashio::config "options[${option}].ess_password")
+    mqtt_server=$(bashio::config "options[${option}].mqtt_server")
+    mqtt_user=$(bashio::config "options[${option}].mqtt_user")
+    mqtt_password=$(bashio::config "options[${option}].mqtt_password")
+    interval_seconds=$(bashio::config "options[${option}].interval_seconds")
 >> "${CONFIG}"
 done
