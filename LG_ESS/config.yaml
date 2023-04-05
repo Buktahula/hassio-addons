@@ -11,12 +11,14 @@ arch:
   - i386
 host_network: true
 options:
+ settings:
   ess_password:
   mqtt_server:
   mqtt_user:
   mqtt_password:
   interval_seconds:
 schema:
+ settings:
   ess_password: str
   mqtt_server: str
   mqtt_user: str
