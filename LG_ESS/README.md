@@ -7,8 +7,8 @@ Python library for LG ESS Solar power converters with EnerVU app compatibility
 [aarch64-shield]: https://img.shields.io/badge/aarch64-yes-green.svg
 [amd64-shield]: https://img.shields.io/badge/amd64-yes-green.svg
 [armhf-shield]: https://img.shields.io/badge/armhf-yes-green.svg
-[armv7-shield]: https://img.shields.io/badge/armv7-no-red.svg
-[i386-shield]: https://img.shields.io/badge/i386-no-red.svg
+[armv7-shield]: https://img.shields.io/badge/armv7-yes-red.svg
+[i386-shield]: https://img.shields.io/badge/i386-yes-red.svg
 
 
 ## Install and configure MQTT broker for Home Assistant.
