@@ -1,4 +1,7 @@
 # Home Assistant Add-on:  LG ESS Solar
+
+![Supports aarch64 Architecture][aarch64-shield]
+
 Python library for LG ESS Solar power converters with EnerVU app compatibility
 
 ## Install and configure MQTT broker for Home Assistant.
