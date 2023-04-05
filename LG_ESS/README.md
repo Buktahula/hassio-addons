@@ -11,8 +11,8 @@ https://play.google.com/store/apps/details?id=ru.iiec.pydroid3&hl=de&gl=US
 run the following to get the password.
 3. Open The Python App on Smatphone and got to Terminal
 
-   Type the flolowing comand
-   -------------------------
+Type the flolowing comand::
+
    pip install pyess
    
    esscli --action get_password
