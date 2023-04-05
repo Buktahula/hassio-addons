@@ -13,4 +13,3 @@ bashio::log.info "Initialize the essmqtt configuration..."
     mqtt_password=$(bashio::config "options.mqtt_password")
     interval_seconds=$(bashio::config "options.interval_seconds")
 >> "${CONFIG}"
-done
