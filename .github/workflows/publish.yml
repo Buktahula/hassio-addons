@@ -41,4 +41,4 @@ jobs:
         with:
           args: |
             --all \
-            --target /data 
+            --target LG_ESS 
