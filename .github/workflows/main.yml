@@ -15,5 +15,4 @@ jobs:
           args: |
             --test \
             --all \
-            --target LG_ESS \
-            --docker-hub buktahula/lgess
+            --target LG_ESS
