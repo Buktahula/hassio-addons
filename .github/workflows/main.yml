@@ -16,4 +16,4 @@ jobs:
             --test \
             --all \
             --target LG_ESS \
-            --docker-hub Buktahula
+            --docker-hub buktahula/lgess
