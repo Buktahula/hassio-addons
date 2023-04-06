@@ -15,4 +15,5 @@ jobs:
           args: |
             --test \
             --all \
-            --target LG_ESS
+            --target LG_ESS \
+            --image lgess
