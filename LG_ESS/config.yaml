@@ -1,5 +1,5 @@
 name: LG ESS
-version: 0.0.3
+version: 0.3
 description: LG ESS Solar power converters for Home Assistant Docker
 slug: lg_ess
 url: https://github.com/Buktahula/hassio-addons/tree/master/LG_ESS
