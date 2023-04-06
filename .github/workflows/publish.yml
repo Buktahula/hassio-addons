@@ -22,4 +22,3 @@ jobs:
           args: |
             --all \
             --target LG_ESS
-            --docker-hub buktahula
