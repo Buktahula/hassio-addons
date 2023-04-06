@@ -10,11 +10,12 @@ Python library for LG ESS Solar power converters with EnerVU app compatibility
 [armv7-shield]: https://img.shields.io/badge/armv7-yes-red.svg
 [i386-shield]: https://img.shields.io/badge/i386-yes-red.svg
 
+## Requirements
 
-## Install and configure MQTT broker for Home Assistant.
+### Install and configure MQTT broker for Home Assistant like:
 https://github.com/home-assistant/addons/tree/master/mosquitto
 
-## Fetch the device password
+### Fetch the device password
 1. You have to install the phyton App on your Android device.
 https://play.google.com/store/apps/details?id=ru.iiec.pydroid3&hl=de&gl=US
 
@@ -27,7 +28,7 @@ open The Python App on Mobile phone go to the Terminal run the following command
 
 3. Write the password down
 
-## Configure the Addon
+### Configure the Addon
 
 ess_password: "the written down password of your LG ESS Converter."
 
