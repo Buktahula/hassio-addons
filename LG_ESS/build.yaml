@@ -5,8 +5,7 @@ build_from:
   armhf: ghcr.io/home-assistant/armhf-base-python:3.8-alpine3.15
   armv7: ghcr.io/home-assistant/armv7-base-python:3.8-alpine3.15
   i386: ghcr.io/home-assistant/i386-base-python:3.8-alpine3.15
+raw_image: lgess
 codenotary:
   signer: notary@home-assistant.io
   base_image: notary@home-assistant.io
-args:
-  PYESS_VERSION: 0.1.14
