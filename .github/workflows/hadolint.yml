@@ -1,0 +1,15 @@
+name: hadolint
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+
+jobs:
+  hadolint:
+    name: lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: brpaz/hadolint-action@v1.5.0
