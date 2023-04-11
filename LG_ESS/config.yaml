@@ -6,8 +6,6 @@ image: buktahula/lgess-{arch}
 description: LG ESS Solar power converters for Home Assistant Docker
 url: https://github.com/Buktahula/hassio-addons/tree/master/LG_ESS
 arch: 
-  - armhf
-  - armv7
   - aarch64
   - amd64
   - i386
