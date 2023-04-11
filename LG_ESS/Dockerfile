@@ -10,7 +10,6 @@ RUN \
         py3-pip \
         python3 \
      && pip install pyess
-COPY data/essmqtt.config /etc/essmqtt.config
 COPY data/run.sh /
 RUN ["chmod", "+x", "/run.sh"]
 CMD [ "/run.sh" ]
