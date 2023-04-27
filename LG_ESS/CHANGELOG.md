@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.0.5
+
+- new pyess version , see issues 
+
 ## 0.0.4
 
 - add git Workflows
