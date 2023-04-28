@@ -63,3 +63,7 @@ interval_seconds: "set the interval."
 
 hass_autoconfig_sensors: "preconfigured all possible Converter sensors."
 
+### Sensor example
+4. Here you can find a German example for the sensor.yaml to use the whole thing in the Home Assistant Energy Dashboard:
+https://github.com/Buktahula/hassio-addons/blob/main/LG_ESS/sensor.yaml
+
