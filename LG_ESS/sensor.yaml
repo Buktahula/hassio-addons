@@ -1,0 +1,174 @@
+####################################################
+#                                                  #
+#                 LG_ESS                           #
+#                                                  #
+####################################################
+- platform: template
+  sensors:
+    actual_grid_sell:
+      friendly_name: "aktuelle Netzeinspeisung"
+      unique_id: actual_grid_sell
+      unit_of_measurement: "kW"
+      device_class: power
+      value_template: >
+        {% if is_state('sensor.ess_home_direction_is_grid_selling', '1') %}
+          {{ states('sensor.ess_common_grid_active_power') | float * 0.001 }}
+        {% else %} 0.0 {% endif %}
+    actual_grid_buy:
+      friendly_name: "aktueller Netzbezug"
+      unique_id: actual_grid_buy
+      unit_of_measurement: "kW"
+      device_class: power
+      value_template: >
+        {% if is_state('sensor.ess_home_direction_is_grid_buying', '1') %}
+          {{ states('sensor.ess_common_grid_active_power') | float * 0.001 }}
+        {% else %} 0.0 {% endif %}
+
+    daily_grid_buy:
+      friendly_name: "Tagesbezug"
+      unique_id: daily_grid_buy
+      unit_of_measurement: "kW"
+      device_class: power
+      value_template: >
+        {{ states('sensor.ess_common_GRID_today_grid_power_purchase_energy') | float * 0.001 }}
+
+    daily_grid_bezug:
+      friendly_name: "Tagesbezug Neu"
+      unique_id: daily_grid_bezug
+      unit_of_measurement: "W"
+      device_class: power
+      value_template: >
+        {{ states('sensor.ess_common_GRID_today_grid_power_purchase_energy')  }}
+
+    daily_verbrauch_gesamt:
+      friendly_name: "Verbrauch gesamt"
+      unique_id: daily_verbrauch_gesamt
+      unit_of_measurement: "W"
+      device_class: power
+      value_template: >
+        {{ states('sensor.ess_common_LOAD_today_load_consumption_sum') }}
+
+    actual_battery_charge:
+      friendly_name: "aktuelle Batterieladung"
+      unique_id: actual_battery_charge
+      unit_of_measurement: "kW"
+      device_class: power
+      value_template: >
+        {% if is_state('sensor.ess_home_direction_is_battery_charging', '1') %}
+          {{ states('sensor.ess_common_batt_dc_power') | float * 0.001 }}
+        {% else %} 0.0 {% endif %}
+    actual_battery_discharge:
+      friendly_name: "aktuelle Batterientladung"
+      unique_id: actual_battery_discharge
+      unit_of_measurement: "kW"
+      device_class: power
+      value_template: >
+        {% if is_state('sensor.ess_home_direction_is_battery_discharging', '1') %}
+          {{ states('sensor.ess_common_batt_dc_power') | float * 0.001 }}
+        {% else %} 0.0 {% endif %}
+
+    actual_generation_pv_full:
+      friendly_name: "aktuelle Stromerzeugung PV Haus Gesamt"
+      unique_id: actual_generation_pv_full
+      unit_of_measurement: "kW"
+      device_class: power
+      value_template: "{{ states('sensor.ess_home_statistics_pcs_pv_total_power') | float * 0.001 }}"
+    actual_generation_pv_1:
+      friendly_name: "aktuelle Stromerzeugung PV 1"
+      unique_id: actual_generation_pv_1
+      unit_of_measurement: "kW"
+      device_class: power
+      value_template: "{{ states('sensor.ess_common_pv_pv1_power') | float * 0.001 }}"
+    actual_generation_pv_2:
+      friendly_name: "aktuelle Stromerzeugung PV 2"
+      unique_id: actual_generation_pv_2
+      unit_of_measurement: "kW"
+      device_class: power
+      value_template: "{{ states('sensor.ess_common_pv_pv2_power') | float * 0.001 }}"
+
+    actual_consuming_house:
+      friendly_name: "aktueller Stromverbrauch Gesamt"
+      unique_id: actual_consuming_house
+      unit_of_measurement: "kW"
+      device_class: power
+      value_template: "{{ states('sensor.ess_common_load_load_power') | float * 0.001 }}"
+
+    energy_sell_today:
+      friendly_name: "eingespeister Strom (heute)"
+      unique_id: energy_sell_today
+      unit_of_measurement: "kWh"
+      device_class: energy
+      value_template: "{{ states('sensor.ess_home_statistics_current_grid_feed_in_energy') | float * 0.001 }}"
+
+    energy_generation_today:
+      friendly_name: "erzeugter Strom (heute)"
+      unique_id: energy_generation_today
+      unit_of_measurement: "kWh"
+      device_class: energy
+      value_template: "{{ states('sensor.ess_home_statistics_current_pv_generation_sum') | float * 0.001}}"
+
+    solaredge_calculated_self_sufficiency:
+      friendly_name: "Autarkie-Grad"
+      unit_of_measurement: "%"
+      device_class: energy
+      value_template: >-
+        {% set selfconsumption = states('sensor.ess_common_LOAD_today_load_consumption_sum') | float(0) %}
+        {% set consumption = states('sensor.ess_common_GRID_today_grid_power_purchase_energy') | float(0) %}
+        {{ 100 - (consumption * 100 / selfconsumption ) | round(0) }}
+
+    energy_day_self_consumption_rate:
+      friendly_name: "Eigenverbrauchsrate (heute)"
+      unique_id: nergy_day_self_consumption_rate
+      unit_of_measurement: "%"
+      device_class: power_factor
+      value_template: "{{ states('sensor.ess_home_statistics_current_day_self_consumption')}}"
+
+    battery_load_percent:
+      friendly_name: "Batterie Ladestand"
+      unique_id: battery_load_percent
+      unit_of_measurement: "%"
+      device_class: power_factor
+      value_template: "{{ states('sensor.ess_common_batt_soc')}}"
+
+- platform: integration
+  source: sensor.actual_consuming_house
+  name: Stromverbrauch Haus gesamt
+  round: 2
+  unit_prefix:
+  method: left
+- platform: integration
+  source: sensor.actual_generation_pv_1
+  name: Stromerzeugung PV Seite 1
+  round: 2
+  unit_prefix:
+  method: left
+- platform: integration
+  source: sensor.actual_generation_pv_2
+  name: Stromerzeugung PV Seite 2
+  round: 2
+  unit_prefix:
+  method: left
+- platform: integration
+  source: sensor.actual_battery_discharge
+  name: Entladung Batterie
+  round: 2
+  unit_prefix:
+  method: left
+- platform: integration
+  source: sensor.actual_battery_charge
+  name: Ladung Batterie
+  round: 2
+  unit_prefix:
+  method: left
+- platform: integration
+  source: sensor.actual_grid_buy
+  name: Bezug aus Netz
+  round: 2
+  unit_prefix:
+  method: left
+- platform: integration
+  source: sensor.actual_grid_sell
+  name: Einspeisung in Netz
+  round: 2
+  unit_prefix:
+  method: left
