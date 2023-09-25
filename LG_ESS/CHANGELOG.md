@@ -1,6 +1,6 @@
 # Changelog
 
-0.0.6
+## 0.0.6
 new pyess version 0.1.15
 
 ## 0.0.5
