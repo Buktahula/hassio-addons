@@ -1,8 +1,10 @@
 # Changelog
 
-## 0.0.5
+0.0.6
+new pyess version 0.1.15
 
-- new pyess version , see issues 
+## 0.0.5
+new pyess version
 
 ## 0.0.4
 
