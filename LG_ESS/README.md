@@ -37,6 +37,15 @@ SOFTWARE.
 https://github.com/home-assistant/addons/tree/master/mosquitto
 
 ### Fetch the device password
+
+first method:
+
+1.You can simply use your router to look up the MAC address of your LG ESS Solar power converter. The password is exactly that but without the colons.
+For the MAC address a3:4d:c2:03:0c:ef your password will be a34dc2030cef. That’s it. (Not my MAC address, only an example)
+
+
+If the first method not work:
+
 1. You have to install the phyton App on your Android device.
 https://play.google.com/store/apps/details?id=ru.iiec.pydroid3&hl=de&gl=US
 
