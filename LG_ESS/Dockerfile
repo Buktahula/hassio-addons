@@ -1,15 +1,18 @@
 ARG BUILD_FROM
 FROM $BUILD_FROM
 
-# Build PYESS 
+# Install PYESS and clean up build dependencies
 ARG PYESS_VERSION
 WORKDIR /usr/share
+
 RUN \
     apk add --no-cache --virtual .build-dependencies \
         build-base \
-        py3-pip \
-        python3 \
-     && pip install pyess
+        python3-dev \
+    && pip install --no-cache-dir pyess \
+    && apk del --no-network .build-dependencies
+
 COPY data/run.sh /
-RUN ["chmod", "+x", "/run.sh"]
+RUN chmod +x /run.sh
+
 CMD [ "/run.sh" ]

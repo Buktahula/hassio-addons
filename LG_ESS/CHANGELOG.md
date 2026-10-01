@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.0
+- Base Image aktualisiert auf Python 3.12 / Alpine 3.20
+- Neues Home Assistant MQTT Service Discovery (Zero-Config für Mosquitto Broker)
+- Optionale manuelle IP-Konfiguration (`ess_host`) hinzugefügt
+- Start-Skript mit Passwort-Validierung und automatischer Reconnect-Schleife verbessert
+- Modernisierte `sensor.yaml` mit `state_class: total_increasing` für vollständige Home Assistant Energy Dashboard Kompatibilität
+- Schutz vor Division durch 0 um Mitternacht im Autarkie-Grad Sensor
+- Dokumentation und Typo-Fixes
+
 ## 0.0.7
 new pyess version 0.1.22
 

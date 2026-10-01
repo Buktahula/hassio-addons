@@ -1,78 +1,77 @@
-# Home Assistant Add-on:  LG ESS Solar
+# Home Assistant Add-on: LG ESS Solar
 
 Python library for LG ESS Solar power converters with EnerVU app compatibility
-from https://github.com/gluap/pyess in a Docker Container for Home Assistant.
+from [gluap/pyess](https://github.com/gluap/pyess) in a Docker Container for Home Assistant.
 
-Copyright (c) 2019-2020 Paul Görgen
+Copyright (c) 2019-2020 Paul Görgen (MIT License)
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-
-![Supports aarch64 Architecture][aarch64-shield] ![Supports amd64 Architecture][amd64-shield] ![Supports armhf Architecture][armhf-shield] ![Supports armv7 Architecture][armv7-shield] ![Supports i386 Architecture][i386-shield]
+![Supports aarch64 Architecture][aarch64-shield] ![Supports amd64 Architecture][amd64-shield] ![Supports armv7 Architecture][armv7-shield] ![Supports i386 Architecture][i386-shield]
 
 [aarch64-shield]: https://img.shields.io/badge/aarch64-yes-green.svg
 [amd64-shield]: https://img.shields.io/badge/amd64-yes-green.svg
-[armhf-shield]: https://img.shields.io/badge/armhf-yes-green.svg
-[armv7-shield]: https://img.shields.io/badge/armv7-yes-red.svg
-[i386-shield]: https://img.shields.io/badge/i386-yes-red.svg
+[armv7-shield]: https://img.shields.io/badge/armv7-yes-green.svg
+[i386-shield]: https://img.shields.io/badge/i386-yes-green.svg
 
-## Requirements
+---
 
-### Install and configure MQTT broker for Home Assistant like:
-https://github.com/home-assistant/addons/tree/master/mosquitto
+## 📋 Voraussetzungen
 
-### Fetch the device password
+### 1. MQTT Broker
+Installiere und starte das offizielle **Mosquitto broker** Add-on in Home Assistant.
+> **Tipp:** Wenn der offizielle Mosquitto-Broker verwendet wird, verbindet sich dieses Add-on **vollautomatisch**! Du musst Server, Port und Zugangsdaten nicht manuell eingeben.
 
-First method:
+### 2. LG ESS Gerätepasswort ermitteln
 
-1.You can simply use your router to look up the MAC address of your LG ESS Solar power converter. The password is exactly that but without the colons.
-For the MAC address a3:4d:c2:03:0c:ef your password will be a34dc2030cef. That’s it. (Not my MAC address, only an example)
+#### Methode 1 (Empfohlen & am einfachsten):
+Im Router nach der MAC-Adresse des LG ESS Wechselrichters suchen. Das Gerätepasswort entspricht exakt der MAC-Adresse in **Kleinbuchstaben ohne Doppelpunkte**.  
+*Beispiel:*  
+MAC-Adresse: `a3:4d:c2:03:0c:ef` ➔ Passwort: `a34dc2030cef`
 
-
-If the first method not work:
-
-1. You have to install the phyton App on your Android device.
-https://play.google.com/store/apps/details?id=ru.iiec.pydroid3&hl=de&gl=US
-
-2. To fetch the device password you need to be connected to the devices Wi-Fi. ** Once you are on the Wi-Fi you can
-open The Python App on Mobile phone go to the Terminal run the following command to get the password.
-
+#### Methode 2 (Über das Direkt-WLAN des Wechselrichters):
+1. Verbinde dich mit dem internen WLAN-Hotspot des LG ESS.
+2. Installiere eine Python-App auf dem Smartphone (z. B. [Pydroid 3](https://play.google.com/store/apps/details?id=ru.iiec.pydroid3) auf Android oder Terminal auf PC/Laptop).
+3. Führe im Terminal folgende Befehle aus:
+   ```bash
    pip install pyess
-   
    esscli --action get_password
+   ```
+4. Notiere das ausgegebene Passwort.
 
-3. Write the password down
+---
 
-### Configure the Addon
+## ⚙️ Konfiguration
 
-ess_password: "the written down password of your LG ESS Converter."
+Beispielkonfiguration im Add-on-Reiter:
 
-mqtt_server: "your configured mqtt server."
+```yaml
+ess_password: "dein_ess_passwort"
+ess_host: "" # Optional: Feste IP-Adresse (z. B. 192.168.1.150), falls Auto-Erkennung nicht greift
+interval_seconds: 5 # Abfrage-Intervall in Sekunden (Standard: 5)
+mqtt_server: "" # Optional: Nur nötig bei externem MQTT-Broker
+mqtt_port: 1883
+mqtt_user: ""
+mqtt_password: ""
+```
 
-mqtt_usser: "your configured mqtt broker user."
+* **`ess_password`** *(Pflicht)*: Das ermittelte Passwort des LG ESS.
+* **`ess_host`** *(Optional)*: Die IP-Adresse oder der Hostname des LG ESS. Wenn leer, wird der Wechselrichter automatisch per mDNS/Broadcast im lokalen Netzwerk gesucht.
+* **`interval_seconds`** *(Standard: 5)*: Aktualisierungsintervall in Sekunden.
+* **`mqtt_*`** *(Optional)*: Nur angeben, wenn ein externer MQTT-Server außerhalb von Home Assistant genutzt wird.
 
-mqtt_password: "your configured mqtt broker password."
+---
 
-interval_seconds: "set the interval."
+## ⚡ Einbindung in das Home Assistant Energie-Dashboard
 
-hass_autoconfig_sensors: "preconfigured all possible Converter sensors."
+In der Datei [`sensor.yaml`](sensor.yaml) findest du fertig vorkonfigurierte Sensoren für Home Assistant.
 
-### Sensor example
-4. Here you can find a German example for the sensor.yaml to use the whole thing in the Home Assistant Energy Dashboard:
-https://github.com/Buktahula/hassio-addons/blob/main/LG_ESS/sensor.yaml
+Kopiere den Inhalt der Datei in deine Home Assistant `configuration.yaml` unter `template:` (oder per `template: !include sensor.yaml`).
 
+### Zuordnung im Energie-Dashboard (**Einstellungen ➔ Dashboards ➔ Energie**):
+
+| Bereich im Energie-Dashboard | Zu wählender Sensor |
+| :--- | :--- |
+| **Netzverbrauch ➔ Netzbezug** | `sensor.tagesnetzbezug` (`kWh`) |
+| **Netzverbrauch ➔ Rückeinspeisung** | `sensor.tagesnetzeinspeisung` (`kWh`) |
+| **Sonnenkollektoren ➔ Solarproduktion** | `sensor.tages_solarerzeugung` (`kWh`) |
+| **Batteriesysteme ➔ In Batterie geladen** | `sensor.tages_batterieladung` (`kWh`) |
+| **Batteriesysteme ➔ Aus Batterie entnommen** | `sensor.tages_batterieentladung` (`kWh`) |
