@@ -2,6 +2,7 @@
 version: "0.1.0"
 slug: lg_ess
 name: "LG ESS"
+image: "buktahula/lgess-{arch}"
 description: "LG ESS Solar power converters and battery storage integration for Home Assistant via MQTT"
 url: "https://github.com/Buktahula/hassio-addons/tree/main/LG_ESS"
 arch:

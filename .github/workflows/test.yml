@@ -16,5 +16,4 @@ jobs:
             --test \
             --amd64 \
             --aarch64 \
-            --target LG_ESS \
-            --image lgess
+            --target LG_ESS
