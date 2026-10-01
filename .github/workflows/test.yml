@@ -8,12 +8,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout the repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Test build
         uses: home-assistant/builder@master
         with:
           args: |
             --test \
-            --all \
+            --amd64 \
+            --aarch64 \
             --target LG_ESS \
             --image lgess
