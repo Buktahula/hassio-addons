@@ -1,5 +1,5 @@
 ---
-version: "0.1.0"
+version: "0.1.1"
 slug: lg_ess
 name: "LG ESS"
 image: "buktahula/lgess-{arch}"
@@ -32,3 +32,4 @@ schema:
   interval_seconds: int(1,600)
   hass_autoconfig_sensors: str
 startup: services
+init: false

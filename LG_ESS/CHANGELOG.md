@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.1.1
+- Fix: `init: false` hinzugefügt, damit s6-overlay als PID 1 startet
+
 ## 0.1.0
 - Base Image aktualisiert auf Python 3.12 / Alpine 3.20
 - Neues Home Assistant MQTT Service Discovery (Zero-Config für Mosquitto Broker)
