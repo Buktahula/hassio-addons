@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.1.2
+- Fix: `distutils` Kompatibilität für Python 3.12 (`setuptools`)
+
 ## 0.1.1
 - Fix: `init: false` hinzugefügt, damit s6-overlay als PID 1 startet
 

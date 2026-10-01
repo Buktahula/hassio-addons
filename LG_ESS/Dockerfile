@@ -9,8 +9,9 @@ RUN \
     apk add --no-cache --virtual .build-dependencies \
         build-base \
         python3-dev \
-    && pip install --no-cache-dir pyess \
-    && apk del --no-network .build-dependencies
+    && pip install --no-cache-dir pyess setuptools \
+    && apk del --no-network .build-dependencies \
+    && find /usr/local/lib -name "essmqtt.py" -exec sed -i "s/from distutils.util import strtobool/from setuptools._distutils.util import strtobool/" {} +
 
 COPY data/run.sh /
 RUN chmod +x /run.sh

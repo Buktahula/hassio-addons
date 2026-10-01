@@ -3,6 +3,9 @@ set -e
 
 bashio::log.info "Starting LG ESS Home Assistant Add-on..."
 
+# Fix deprecated distutils in Python 3.12+ for pyess
+find /usr/local/lib -name "essmqtt.py" -exec sed -i "s/from distutils.util import strtobool/from setuptools._distutils.util import strtobool/" {} + 2>/dev/null || true
+
 # 1. Validate ESS Password
 if ! bashio::config.has_value 'ess_password'; then
     bashio::log.fatal "Kein ESS-Passwort konfiguriert!"
