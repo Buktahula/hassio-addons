@@ -64,6 +64,7 @@ SENSOR_DEFINITIONS = [
     {
         "id": "actual_grid_sell",
         "unique_id": "lgess_actual_grid_sell",
+        "object_ids": {"de": "aktuelle_netzeinspeisung", "en": "current_grid_feed_in"},
         "name": {"de": "Aktuelle Netzeinspeisung", "en": "Current Grid Feed-in"},
         "device_class": "power",
         "state_class": "measurement",
@@ -78,6 +79,7 @@ SENSOR_DEFINITIONS = [
     {
         "id": "actual_grid_buy",
         "unique_id": "lgess_actual_grid_buy",
+        "object_ids": {"de": "aktueller_netzbezug", "en": "current_grid_consumption"},
         "name": {"de": "Aktueller Netzbezug", "en": "Current Grid Consumption"},
         "device_class": "power",
         "state_class": "measurement",
@@ -92,6 +94,7 @@ SENSOR_DEFINITIONS = [
     {
         "id": "actual_battery_charge",
         "unique_id": "lgess_actual_battery_charge",
+        "object_ids": {"de": "aktuelle_batterieladung", "en": "current_battery_charging"},
         "name": {"de": "Aktuelle Batterieladung", "en": "Current Battery Charging"},
         "device_class": "power",
         "state_class": "measurement",
@@ -106,6 +109,7 @@ SENSOR_DEFINITIONS = [
     {
         "id": "actual_battery_discharge",
         "unique_id": "lgess_actual_battery_discharge",
+        "object_ids": {"de": "aktuelle_batterientladung", "en": "current_battery_discharging"},
         "name": {"de": "Aktuelle Batterientladung", "en": "Current Battery Discharging"},
         "device_class": "power",
         "state_class": "measurement",
@@ -120,6 +124,7 @@ SENSOR_DEFINITIONS = [
     {
         "id": "actual_generation_pv_full",
         "unique_id": "lgess_actual_generation_pv_full",
+        "object_ids": {"de": "aktuelle_pv_erzeugung_gesamt", "en": "current_solar_generation_total"},
         "name": {"de": "Aktuelle PV-Erzeugung Gesamt", "en": "Current Solar Generation Total"},
         "device_class": "power",
         "state_class": "measurement",
@@ -130,6 +135,7 @@ SENSOR_DEFINITIONS = [
     {
         "id": "actual_generation_pv_1",
         "unique_id": "lgess_actual_generation_pv_1",
+        "object_ids": {"de": "aktuelle_pv_erzeugung_string_1", "en": "current_solar_generation_string_1"},
         "name": {"de": "Aktuelle PV-Erzeugung String 1", "en": "Current Solar Generation String 1"},
         "device_class": "power",
         "state_class": "measurement",
@@ -140,6 +146,7 @@ SENSOR_DEFINITIONS = [
     {
         "id": "actual_generation_pv_2",
         "unique_id": "lgess_actual_generation_pv_2",
+        "object_ids": {"de": "aktuelle_pv_erzeugung_string_2", "en": "current_solar_generation_string_2"},
         "name": {"de": "Aktuelle PV-Erzeugung String 2", "en": "Current Solar Generation String 2"},
         "device_class": "power",
         "state_class": "measurement",
@@ -150,6 +157,7 @@ SENSOR_DEFINITIONS = [
     {
         "id": "actual_consuming_house",
         "unique_id": "lgess_actual_consuming_house",
+        "object_ids": {"de": "aktueller_hausverbrauch", "en": "current_house_consumption"},
         "name": {"de": "Aktueller Hausverbrauch", "en": "Current House Consumption"},
         "device_class": "power",
         "state_class": "measurement",
@@ -166,6 +174,7 @@ SENSOR_DEFINITIONS = [
     {
         "id": "daily_grid_buy",
         "unique_id": "lgess_daily_grid_buy",
+        "object_ids": {"de": "tagesnetzbezug", "en": "daily_grid_consumption"},
         "name": {"de": "Tagesnetzbezug", "en": "Daily Grid Consumption"},
         "device_class": "energy",
         "state_class": "total_increasing",
@@ -176,6 +185,7 @@ SENSOR_DEFINITIONS = [
     {
         "id": "energy_sell_today",
         "unique_id": "lgess_energy_sell_today",
+        "object_ids": {"de": "tagesnetzeinspeisung", "en": "daily_grid_feed_in"},
         "name": {"de": "Tagesnetzeinspeisung", "en": "Daily Grid Feed-in"},
         "device_class": "energy",
         "state_class": "total_increasing",
@@ -195,6 +205,7 @@ SENSOR_DEFINITIONS = [
     {
         "id": "energy_generation_today",
         "unique_id": "lgess_energy_generation_today",
+        "object_ids": {"de": "tages_solarerzeugung", "en": "daily_solar_generation"},
         "name": {"de": "Tages-Solarerzeugung", "en": "Daily Solar Generation"},
         "device_class": "energy",
         "state_class": "total_increasing",
@@ -214,6 +225,7 @@ SENSOR_DEFINITIONS = [
     {
         "id": "energy_batt_charge_today",
         "unique_id": "lgess_energy_batt_charge_today",
+        "object_ids": {"de": "tages_batterieladung", "en": "daily_battery_charge"},
         "name": {"de": "Tages-Batterieladung", "en": "Daily Battery Charge"},
         "device_class": "energy",
         "state_class": "total_increasing",
@@ -224,6 +236,7 @@ SENSOR_DEFINITIONS = [
     {
         "id": "energy_batt_discharge_today",
         "unique_id": "lgess_energy_batt_discharge_today",
+        "object_ids": {"de": "tages_batterieentladung", "en": "daily_battery_discharge"},
         "name": {"de": "Tages-Batterieentladung", "en": "Daily Battery Discharge"},
         "device_class": "energy",
         "state_class": "total_increasing",
@@ -234,6 +247,7 @@ SENSOR_DEFINITIONS = [
     {
         "id": "daily_verbrauch_gesamt",
         "unique_id": "lgess_daily_verbrauch_gesamt",
+        "object_ids": {"de": "tages_hausverbrauch_gesamt", "en": "daily_house_consumption_total"},
         "name": {"de": "Tages-Hausverbrauch Gesamt", "en": "Daily House Consumption Total"},
         "device_class": "energy",
         "state_class": "total_increasing",
@@ -248,6 +262,7 @@ SENSOR_DEFINITIONS = [
     {
         "id": "battery_load_percent",
         "unique_id": "lgess_battery_load_percent",
+        "object_ids": {"de": "batterie_ladestand", "en": "battery_state_of_charge"},
         "name": {"de": "Batterieladestand", "en": "Battery State of Charge"},
         "device_class": "battery",
         "state_class": "measurement",
@@ -257,6 +272,7 @@ SENSOR_DEFINITIONS = [
     {
         "id": "energy_day_self_consumption_rate",
         "unique_id": "lgess_energy_day_self_consumption_rate",
+        "object_ids": {"de": "eigenverbrauchsrate_heute", "en": "self_consumption_rate_today"},
         "name": {"de": "Eigenverbrauchsrate (heute)", "en": "Self-Consumption Rate (today)"},
         "state_class": "measurement",
         "unit": "%",
@@ -266,6 +282,7 @@ SENSOR_DEFINITIONS = [
     {
         "id": "calculated_self_sufficiency",
         "unique_id": "lgess_calculated_self_sufficiency",
+        "object_ids": {"de": "autarkie_grad_heute", "en": "autarky_rate_today"},
         "name": {"de": "Autarkiegrad (heute)", "en": "Autarky Rate (today)"},
         "state_class": "measurement",
         "unit": "%",
@@ -275,6 +292,7 @@ SENSOR_DEFINITIONS = [
     {
         "id": "pv1_voltage",
         "unique_id": "lgess_pv1_voltage",
+        "object_ids": {"de": "pv_string_1_spannung", "en": "pv_string_1_voltage"},
         "name": {"de": "PV String 1 Spannung", "en": "PV String 1 Voltage"},
         "device_class": "voltage",
         "state_class": "measurement",
@@ -285,6 +303,7 @@ SENSOR_DEFINITIONS = [
     {
         "id": "pv2_voltage",
         "unique_id": "lgess_pv2_voltage",
+        "object_ids": {"de": "pv_string_2_spannung", "en": "pv_string_2_voltage"},
         "name": {"de": "PV String 2 Spannung", "en": "PV String 2 Voltage"},
         "device_class": "voltage",
         "state_class": "measurement",
@@ -295,6 +314,7 @@ SENSOR_DEFINITIONS = [
     {
         "id": "grid_freq",
         "unique_id": "lgess_grid_freq",
+        "object_ids": {"de": "netzfrequenz", "en": "grid_frequency"},
         "name": {"de": "Netzfrequenz", "en": "Grid Frequency"},
         "device_class": "frequency",
         "state_class": "measurement",
@@ -305,6 +325,7 @@ SENSOR_DEFINITIONS = [
     {
         "id": "battery_status",
         "unique_id": "lgess_battery_status",
+        "object_ids": {"de": "batteriestatus", "en": "battery_status"},
         "name": {"de": "Batteriestatus", "en": "Battery Status"},
         "icon": "mdi:battery-heart",
         "calc": lambda h, c: str(c.get("BATT", {}).get("status", h.get("statistics", {}).get("bat_status", "unknown"))),
@@ -312,6 +333,7 @@ SENSOR_DEFINITIONS = [
     {
         "id": "operation_mode",
         "unique_id": "lgess_operation_mode",
+        "object_ids": {"de": "betriebsmodus", "en": "operation_mode"},
         "name": {"de": "Betriebsmodus", "en": "Operation Mode"},
         "icon": "mdi:cog-sync",
         "calc": lambda h, c: str(c.get("PCS", {}).get("operation_mode", "unknown")),
@@ -364,11 +386,12 @@ async def publish_discovery(mqtt_client, lang="de", power_unit="kW"):
     for s in SENSOR_DEFINITIONS:
         name = s["name"].get(lang, s["name"]["de"])
         unit = power_unit if s.get("type") == "power" else s.get("unit")
+        obj_id = s.get("object_ids", {}).get(lang, s["id"])
         
         payload = {
             "name": name,
-            "unique_id": s["unique_id"],
-            "object_id": s["unique_id"],
+            "unique_id": f"lgess_mqtt_{s['id']}",
+            "object_id": obj_id,
             "state_topic": f"ess/sensors/{s['id']}",
             "device": DEVICE_INFO,
         }
