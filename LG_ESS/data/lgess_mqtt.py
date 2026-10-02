@@ -10,6 +10,7 @@ import argparse
 import asyncio
 import json
 import logging
+import os
 import sys
 import aiohttp
 import aiohttp.client_exceptions
@@ -53,7 +54,7 @@ DEVICE_INFO = {
     "name": "LG ESS",
     "manufacturer": "LG Electronics",
     "model": "ESS Home",
-    "sw_version": "0.1.3",
+    "sw_version": "0.1.6",
 }
 
 # Sensor definitions with localized names, units, device classes, and extractors
@@ -513,6 +514,164 @@ async def publish_discovery(mqtt_client, lang="de", power_unit="kW", entity_nami
     logger.info(f"Successfully published {len(SENSOR_DEFINITIONS)} sensors and {len(SWITCH_DEFINITIONS)} switches to MQTT Discovery.")
 
 
+async def run_diagnostics(entity_naming="legacy", lang="de", delay=4):
+    """
+    Runs automated migration diagnostics via Home Assistant Supervisor API.
+    Detects if orphaned YAML entities (e.g. from former template.yaml / sensor.yaml)
+    are occupying target entity IDs and forcing HA to append '_2'.
+    """
+    try:
+        await asyncio.sleep(delay)
+
+        token = os.environ.get("SUPERVISOR_TOKEN") or os.environ.get("HASSIO_TOKEN")
+        if not token:
+            logger.debug("Supervisor API token not available; skipping migration diagnostics.")
+            return
+
+        url = "http://supervisor/core/api/states"
+        headers = {
+            "Authorization": f"Bearer {token}",
+            "Content-Type": "application/json",
+        }
+
+        timeout = aiohttp.ClientTimeout(total=10)
+        async with aiohttp.ClientSession(timeout=timeout) as session:
+            async with session.get(url, headers=headers) as resp:
+                if resp.status != 200:
+                    logger.debug(f"Supervisor API returned status {resp.status}; diagnostics skipped.")
+                    return
+                states_list = await resp.json()
+
+        if not isinstance(states_list, list):
+            logger.debug("Supervisor API did not return a valid states list.")
+            return
+
+        ha_states = {
+            item.get("entity_id"): item
+            for item in states_list
+            if isinstance(item, dict) and "entity_id" in item
+        }
+
+        conflicts = []
+
+        # Check sensors
+        for s in SENSOR_DEFINITIONS:
+            s_id = s["id"]
+            if entity_naming == "legacy":
+                obj_id = LEGACY_OBJECT_IDS.get(s_id, s_id)
+            else:
+                obj_id = s.get("object_ids", {}).get(lang, s_id)
+
+            target_eid = f"sensor.{obj_id}"
+            dup_eids = [
+                eid for eid in ha_states
+                if eid.startswith(f"{target_eid}_") and eid[len(target_eid) + 1:].isdigit()
+            ]
+            if dup_eids:
+                old_state = ha_states.get(target_eid, {})
+                old_val = old_state.get("state", "nicht gefunden / not found")
+                conflicts.append({
+                    "target": target_eid,
+                    "duplicates": dup_eids,
+                    "old_state": old_val,
+                })
+
+        # Check switches
+        for sw in SWITCH_DEFINITIONS:
+            sw_id = sw["id"]
+            obj_id = sw_id if entity_naming == "legacy" else sw["unique_id"]
+            target_eid = f"switch.{obj_id}"
+            dup_eids = [
+                eid for eid in ha_states
+                if eid.startswith(f"{target_eid}_") and eid[len(target_eid) + 1:].isdigit()
+            ]
+            if dup_eids:
+                old_state = ha_states.get(target_eid, {})
+                old_val = old_state.get("state", "nicht gefunden / not found")
+                conflicts.append({
+                    "target": target_eid,
+                    "duplicates": dup_eids,
+                    "old_state": old_val,
+                })
+
+        if not conflicts:
+            if lang == "de":
+                logger.info("✅ Migrations-Diagnose: Alle Sensoren und Schalter sind sauber zugeordnet. Keine blockierenden Alt-Entitäten gefunden!")
+            else:
+                logger.info("✅ Migration Diagnostics: All sensors and switches are mapped cleanly. No orphaned YAML entities found!")
+            return
+
+        sample_target = conflicts[0]["target"]
+        sample_dup = conflicts[0]["duplicates"][0]
+
+        if lang == "de":
+            log_lines = [
+                "",
+                "================================================================================",
+                "⚠️  MIGRATIONS-DIAGNOSE: ALT-ENTITÄTEN BLOCKIEREN MQTT-SENSOREN! ⚠️",
+                "================================================================================",
+                "Home Assistant hat für folgende Entitäten eine Endung wie '_2' vergeben,",
+                "weil alte, inaktive YAML-Entitäten (z. B. aus template.yaml oder sensor.yaml)",
+                "noch in der Home Assistant Entitäten-Registry gespeichert sind:",
+                "",
+            ]
+            for c in conflicts:
+                dup_str = ", ".join(c["duplicates"])
+                log_lines.append(f"  • {c['target']} (Status der Alt-Entität: '{c['old_state']}') ➔ NEU: {dup_str}")
+
+            log_lines.extend([
+                "",
+                "SO BEHEBST DU DAS IN 30 SEKUNDEN (damit deine Langzeitstatistiken nahtlos weiterlaufen):",
+                "  1. Öffne in Home Assistant: Einstellungen ➔ Geräte & Dienste ➔ Entitäten",
+                "  2. Suche nach den oben genannten alten Entitäten (Filter: 'Nicht verfügbar').",
+                f"  3. Klicke die alte, inaktive Entität an (z. B. '{sample_target}') und wähle 'Löschen'.",
+                f"  4. Öffne nun die neue Entität mit '_2' (z. B. '{sample_dup}'), klicke auf das Zahnrad-Symbol",
+                f"     und entferne einfach das '_2' aus der Entitäts-ID (wieder zu '{sample_target}') ➔ Speichern!",
+                "",
+                "➔ Sobald das erledigt ist, laufen deine bisherigen Langzeitstatistiken und",
+                "  das Energie-Dashboard ohne Datenverlust mit den neuen Live-Daten weiter!",
+                "================================================================================",
+                "",
+            ])
+        else:
+            log_lines = [
+                "",
+                "================================================================================",
+                "⚠️  MIGRATION DIAGNOSTICS: ORPHANED ENTITIES BLOCKING MQTT SENSORS! ⚠️",
+                "================================================================================",
+                "Home Assistant has appended '_2' to the following entities because older,",
+                "inactive YAML entities (e.g. from template.yaml or sensor.yaml) are still",
+                "retained in Home Assistant's Entity Registry:",
+                "",
+            ]
+            for c in conflicts:
+                dup_str = ", ".join(c["duplicates"])
+                log_lines.append(f"  • {c['target']} (Old entity state: '{c['old_state']}') ➔ NEW: {dup_str}")
+
+            log_lines.extend([
+                "",
+                "HOW TO FIX THIS IN 30 SECONDS (to seamlessly preserve your long-term energy stats):",
+                "  1. In Home Assistant, go to: Settings ➔ Devices & Services ➔ Entities",
+                "  2. Filter by 'Unavailable' or search for the affected entity.",
+                f"  3. Click on the orphaned entity (e.g. '{sample_target}') and select 'Delete'.",
+                f"  4. Click on the new entity with '_2' (e.g. '{sample_dup}'), open Settings (gear icon),",
+                f"     and remove the '_2' from the Entity ID (back to '{sample_target}') ➔ Save!",
+                "",
+                "➔ Immediately afterwards, your existing Energy Dashboard and historical",
+                "  statistics will resume without any data loss!",
+                "================================================================================",
+                "",
+            ])
+
+        for line in log_lines:
+            logger.warning(line)
+
+    except asyncio.CancelledError:
+        pass
+    except Exception as ex:
+        logger.debug(f"Error during migration diagnostics: {ex}")
+
+
 async def handle_control(client, ess):
     """Listens for switch commands on ess/control/# and interacts with LG ESS."""
     try:
@@ -647,6 +806,7 @@ async def main():
                 # Publish Home Assistant MQTT Discovery configs once on connect
                 if auto_create:
                     await publish_discovery(client, lang=lang, power_unit=power_unit, entity_naming=entity_naming)
+                    asyncio.create_task(run_diagnostics(entity_naming=entity_naming, lang=lang, delay=4))
 
                 # Start control listener task
                 control_task = asyncio.create_task(handle_control(client, ess))

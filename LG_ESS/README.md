@@ -98,12 +98,9 @@ In Home Assistant hängen alle Langzeitstatistiken (LTS) und Verläufe im Energi
 ### Schritt-für-Schritt Anleitung:
 
 1. **Add-on aktualisieren & starten:**
-   - Installiere Version **0.1.4** und starte das Add-on. Unter MQTT erscheint das Gerät *„LG ESS“*.
+   - Installiere Version **0.1.6** (oder neuer) und starte das Add-on. Unter MQTT erscheint das Gerät *„LG ESS“*.
 2. **Alte Template-Sensoren auskommentieren:**
-   - Öffne deine `configuration.yaml` und kommentiere die Zeile aus:
-     ```yaml
-     # template: !include sensor.yaml
-     ```
+   - Öffne deine `configuration.yaml` (oder `template.yaml`) und kommentiere die alten LG ESS Template-Sensoren aus.
    - Starte Home Assistant neu (oder gehe auf *Entwicklerwerkzeuge ➔ YAML ➔ „Template-Entitäten neu laden“*).
 3. **Alte Einträge freigeben:**
    - Gehe zu **Einstellungen ➔ Geräte & Dienste ➔ Entitäten**.
@@ -113,6 +110,10 @@ In Home Assistant hängen alle Langzeitstatistiken (LTS) und Verläufe im Energi
    - Die neuen MQTT-Sensoren übernehmen automatisch die gewohnten IDs (z. B. `sensor.daily_grid_buy`).
    - Falls ein Sensor vorübergehend als `_2` angelegt wurde: Einfach auf den Sensor klicken ➔ **Zahnrad (Einstellungen)** ➔ Entitäts-ID auf den Originalnamen ändern.
    - Dein Energie-Dashboard und alle Lovelace-Karten laufen **sofort ohne Anpassung weiter**!
+
+> [!TIP]
+> **Automatische Migrations-Diagnose (ab v0.1.6):**
+> Das Add-on prüft beim Start vollautomatisch über die Home Assistant API, ob noch alte inaktive YAML-Sensoren die IDs blockieren und HA ein `_2` angehängt hat. Falls ja, listet das Add-on-Protokoll alle betroffenen Sensoren auf und bestätigt nach der Bereinigung mit einem grünen Häkchen (`✅ Migrations-Diagnose: Alle Sensoren und Schalter sind sauber zugeordnet`).
 
 ### 1:1 Entity-ID Übersicht:
 

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.6
+- **Automatische Migrations-Diagnose (`run_diagnostics`)**:
+  - Erkennt automatisch beim Start, wenn alte, inaktive YAML-Sensoren (z. B. aus früheren `template.yaml`- oder `sensor.yaml`-Konfigurationen) die Entitäts-IDs blockieren und Home Assistant deshalb ein `_2` angehängt hat (z. B. `sensor.daily_grid_buy_2`).
+  - Gibt im Add-on-Protokoll eine auffällige Warnung mit einer konkreten 30-Sekunden-Schritt-für-Schritt-Anleitung aus, wie die blockierende Alt-Entität gelöscht und die Namensendung `_2` entfernt werden kann, damit alle historischen Langzeitstatistiken im Energie-Dashboard nahtlos erhalten bleiben.
+  - Prüft den Zustand über die Home Assistant Supervisor API und bestätigt nach erfolgreicher Bereinigung mit einem grünen Status (`✅ Migrations-Diagnose: Alle Sensoren und Schalter sind sauber zugeordnet`).
+
 ## 0.1.5
 - **3. PV-String Unterstützung**:
   - `pv3_power`, `pv3_voltage` und `pv3_current` zur Standard-Konfiguration (`hass_autoconfig_sensors`) hinzugefügt.
