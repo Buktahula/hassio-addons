@@ -368,6 +368,58 @@ SWITCH_DEFINITIONS = [
 ]
 
 
+# Legacy 2023 sensor.yaml mapping (exact friendly names and object_ids)
+LEGACY_NAMES = {
+    "actual_grid_sell": "aktuelle Netzeinspeisung",
+    "actual_grid_buy": "aktueller Netzbezug",
+    "daily_grid_buy": "Tagesbezug",
+    "daily_verbrauch_gesamt": "Verbrauch gesamt",
+    "actual_battery_charge": "aktuelle Batterieladung",
+    "actual_battery_discharge": "aktuelle Batterientladung",
+    "actual_generation_pv_full": "aktuelle Stromerzeugung PV Haus Gesamt",
+    "actual_generation_pv_1": "aktuelle Stromerzeugung PV 1",
+    "actual_generation_pv_2": "aktuelle Stromerzeugung PV 2",
+    "actual_consuming_house": "aktueller Stromverbrauch Gesamt",
+    "energy_sell_today": "eingespeister Strom (heute)",
+    "energy_generation_today": "erzeugter Strom (heute)",
+    "energy_batt_charge_today": "Tages-Batterieladung",
+    "energy_batt_discharge_today": "Tages-Batterieentladung",
+    "battery_load_percent": "Batterie Ladestand",
+    "energy_day_self_consumption_rate": "Eigenverbrauchsrate (heute)",
+    "calculated_self_sufficiency": "Autarkie-Grad",
+    "pv1_voltage": "PV String 1 Spannung",
+    "pv2_voltage": "PV String 2 Spannung",
+    "grid_freq": "Netzfrequenz",
+    "battery_status": "Batteriestatus",
+    "operation_mode": "Betriebsmodus",
+}
+
+LEGACY_OBJECT_IDS = {
+    "actual_grid_sell": "actual_grid_sell",
+    "actual_grid_buy": "actual_grid_buy",
+    "daily_grid_buy": "daily_grid_buy",
+    "daily_verbrauch_gesamt": "daily_verbrauch_gesamt",
+    "actual_battery_charge": "actual_battery_charge",
+    "actual_battery_discharge": "actual_battery_discharge",
+    "actual_generation_pv_full": "actual_generation_pv_full",
+    "actual_generation_pv_1": "actual_generation_pv_1",
+    "actual_generation_pv_2": "actual_generation_pv_2",
+    "actual_consuming_house": "actual_consuming_house",
+    "energy_sell_today": "energy_sell_today",
+    "energy_generation_today": "energy_generation_today",
+    "energy_batt_charge_today": "energy_batt_charge_today",
+    "energy_batt_discharge_today": "energy_batt_discharge_today",
+    "battery_load_percent": "battery_load_percent",
+    "energy_day_self_consumption_rate": "energy_day_self_consumption_rate",
+    "calculated_self_sufficiency": "solaredge_calculated_self_sufficiency",
+    "pv1_voltage": "pv1_voltage",
+    "pv2_voltage": "pv2_voltage",
+    "grid_freq": "grid_freq",
+    "battery_status": "battery_status",
+    "operation_mode": "operation_mode",
+}
+
+
 async def recursive_publish_dict(mqtt_client, prefix, data):
     """Publishes dictionary recursively to raw MQTT topics."""
     for key, value in data.items():
@@ -378,21 +430,27 @@ async def recursive_publish_dict(mqtt_client, prefix, data):
             await mqtt_client.publish(topic, str(value))
 
 
-async def publish_discovery(mqtt_client, lang="de", power_unit="kW"):
+async def publish_discovery(mqtt_client, lang="de", power_unit="kW", entity_naming="legacy"):
     """Publishes Home Assistant MQTT discovery payloads for all sensors and switches."""
-    logger.info(f"Publishing Home Assistant MQTT discovery (language: {lang}, power_unit: {power_unit})...")
+    logger.info(f"Publishing Home Assistant MQTT discovery (naming: {entity_naming}, language: {lang}, power_unit: {power_unit})...")
 
     # 1. Sensors
     for s in SENSOR_DEFINITIONS:
-        name = s["name"].get(lang, s["name"]["de"])
+        s_id = s["id"]
+        if entity_naming == "legacy":
+            name = LEGACY_NAMES.get(s_id, s["name"].get(lang, s["name"]["de"]))
+            obj_id = LEGACY_OBJECT_IDS.get(s_id, s_id)
+        else:
+            name = s["name"].get(lang, s["name"]["de"])
+            obj_id = s.get("object_ids", {}).get(lang, s_id)
+
         unit = power_unit if s.get("type") == "power" else s.get("unit")
-        obj_id = s.get("object_ids", {}).get(lang, s["id"])
         
         payload = {
             "name": name,
-            "unique_id": f"lgess_mqtt_{s['id']}",
+            "unique_id": f"lgess_mqtt_{s_id}",
             "object_id": obj_id,
-            "state_topic": f"ess/sensors/{s['id']}",
+            "state_topic": f"ess/sensors/{s_id}",
             "device": DEVICE_INFO,
         }
         if "device_class" in s:
@@ -404,16 +462,18 @@ async def publish_discovery(mqtt_client, lang="de", power_unit="kW"):
         if "icon" in s:
             payload["icon"] = s["icon"]
 
-        discovery_topic = f"homeassistant/sensor/lg_ess/{s['id']}/config"
+        discovery_topic = f"homeassistant/sensor/lg_ess/{s_id}/config"
         await mqtt_client.publish(discovery_topic, json.dumps(payload), retain=True, qos=1)
 
     # 2. Switches
     for sw in SWITCH_DEFINITIONS:
+        sw_id = sw["id"]
         name = sw["name"].get(lang, sw["name"]["de"])
+        obj_id = sw_id if entity_naming == "legacy" else sw["unique_id"]
         payload = {
             "name": name,
             "unique_id": sw["unique_id"],
-            "object_id": sw["unique_id"],
+            "object_id": obj_id,
             "command_topic": sw["command_topic"],
             "state_topic": sw["state_topic"],
             "payload_on": "ON",
@@ -421,7 +481,7 @@ async def publish_discovery(mqtt_client, lang="de", power_unit="kW"):
             "device": DEVICE_INFO,
             "icon": sw["icon"],
         }
-        discovery_topic = f"homeassistant/switch/lg_ess/{sw['id']}/config"
+        discovery_topic = f"homeassistant/switch/lg_ess/{sw_id}/config"
         await mqtt_client.publish(discovery_topic, json.dumps(payload), retain=True, qos=1)
 
     logger.info(f"Successfully published {len(SENSOR_DEFINITIONS)} sensors and {len(SWITCH_DEFINITIONS)} switches to MQTT Discovery.")
@@ -524,6 +584,7 @@ async def main():
     parser.add_argument("--auto_create_sensors", default="true", help="Auto-create HA sensors via MQTT Discovery")
     parser.add_argument("--sensor_language", default="de", help="Language for sensor names (de / en)")
     parser.add_argument("--power_unit", default="kW", choices=["kW", "W"], help="Power unit for real-time sensors")
+    parser.add_argument("--entity_naming", default="legacy", choices=["legacy", "modern"], help="Naming schema: legacy (2023 sensor.yaml) or modern")
     parser.add_argument("--hass_autoconfig_sensors", default=None, help="Legacy pyess autoconfig list (optional)")
 
     args = parser.parse_args()
@@ -531,6 +592,7 @@ async def main():
     auto_create = str_to_bool(args.auto_create_sensors)
     lang = "de" if str(args.sensor_language).lower().startswith("de") else "en"
     power_unit = args.power_unit
+    entity_naming = args.entity_naming
 
     loop = asyncio.get_running_loop()
 
@@ -558,7 +620,7 @@ async def main():
 
                 # Publish Home Assistant MQTT Discovery configs once on connect
                 if auto_create:
-                    await publish_discovery(client, lang=lang, power_unit=power_unit)
+                    await publish_discovery(client, lang=lang, power_unit=power_unit, entity_naming=entity_naming)
 
                 # Start control listener task
                 control_task = asyncio.create_task(handle_control(client, ess))

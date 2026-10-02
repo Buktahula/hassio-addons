@@ -48,6 +48,7 @@ ess_password: "dein_ess_passwort"
 ess_host: "" # Optional: Feste IP-Adresse (z. B. 192.168.1.150), falls Auto-Erkennung nicht greift
 interval_seconds: 5 # Abfrage-Intervall in Sekunden (Standard: 5)
 auto_create_sensors: true # Automatisch Home Assistant Sensoren via MQTT erstellen
+entity_naming: "legacy" # "legacy" (alte 2023er sensor.yaml IDs: sensor.daily_grid_buy etc.) oder "modern" (sensor.tagesnetzbezug etc.)
 sensor_language: "auto" # "auto" (Systemsprache von HA), "de" (Deutsch) oder "en" (Englisch)
 power_unit: "kW" # "kW" (Standard) oder "W" für aktuelle Leistungswerte
 mqtt_server: "" # Optional: Nur nötig bei externem MQTT-Broker
@@ -60,6 +61,9 @@ mqtt_password: ""
 * **`ess_host`** *(Optional)*: Die IP-Adresse oder der Hostname des LG ESS. Wenn leer, wird der Wechselrichter automatisch per mDNS/Broadcast im lokalen Netzwerk gesucht.
 * **`interval_seconds`** *(Standard: 5)*: Aktualisierungsintervall in Sekunden.
 * **`auto_create_sensors`** *(Standard: true)*: Legt alle Sensoren und Schalter vollautomatisch als Home Assistant Entitäten unter einem einheitlichen „LG ESS“ Gerät an.
+* **`entity_naming`** *(Standard: legacy)*:
+  * **`legacy` (Empfohlen für bestehende Installationen)**: Verwendet exakt die historischen Entity-IDs der ursprünglichen 2023er `sensor.yaml` (`sensor.daily_grid_buy`, `sensor.energy_sell_today`, `sensor.energy_generation_today`, `sensor.actual_grid_sell` etc.). Deine bestehenden Dashboards und alle Verläufe im Energie-Dashboard bleiben **ohne jede Änderung erhalten**!
+  * **`modern`**: Verwendet die neuen, voll deutsch lokalisierten Entity-IDs (`sensor.tagesnetzbezug`, `sensor.tagesnetzeinspeisung`, etc.).
 * **`sensor_language`** *(Standard: auto)*: Erkennt automatisch die Systemsprache von Home Assistant und benennt die Sensoren passend (Deutsch oder Englisch). Kann auch fest auf `de` oder `en` gestellt werden.
 * **`power_unit`** *(Standard: kW)*: Einheit für Live-Leistungswerte (`kW` oder `W`).
 * **`mqtt_*`** *(Optional)*: Nur angeben, wenn ein externer MQTT-Server außerhalb von Home Assistant genutzt wird.
@@ -74,13 +78,13 @@ Alle Sensoren und Schalter werden automatisch über MQTT Discovery angelegt und 
 
 ### Zuordnung im Energie-Dashboard (**Einstellungen ➔ Dashboards ➔ Energie**):
 
-| Bereich im Energie-Dashboard | Zu wählender Sensor (DE) | Zu wählender Sensor (EN) |
+| Bereich im Energie-Dashboard | Bei `entity_naming: legacy` (Standard) | Bei `entity_naming: modern` |
 | :--- | :--- | :--- |
-| **Netzverbrauch ➔ Netzbezug** | `sensor.tagesnetzbezug` | `sensor.daily_grid_consumption` |
-| **Netzverbrauch ➔ Rückeinspeisung** | `sensor.tagesnetzeinspeisung` | `sensor.daily_grid_feed_in` |
-| **Sonnenkollektoren ➔ Solarproduktion** | `sensor.tages_solarerzeugung` | `sensor.daily_solar_generation` |
-| **Batteriesysteme ➔ In Batterie geladen** | `sensor.tages_batterieladung` | `sensor.daily_battery_charge` |
-| **Batteriesysteme ➔ Aus Batterie entnommen** | `sensor.tages_batterieentladung` | `sensor.daily_battery_discharge` |
+| **Netzverbrauch ➔ Netzbezug** | `sensor.daily_grid_buy` | `sensor.tagesnetzbezug` |
+| **Netzverbrauch ➔ Rückeinspeisung** | `sensor.energy_sell_today` | `sensor.tagesnetzeinspeisung` |
+| **Sonnenkollektoren ➔ Solarproduktion** | `sensor.energy_generation_today` | `sensor.tages_solarerzeugung` |
+| **Batteriesysteme ➔ In Batterie geladen** | `sensor.energy_batt_charge_today` | `sensor.tages_batterieladung` |
+| **Batteriesysteme ➔ Aus Batterie entnommen** | `sensor.energy_batt_discharge_today` | `sensor.tages_batterieentladung` |
 
 ---
 
@@ -89,12 +93,12 @@ Alle Sensoren und Schalter werden automatisch über MQTT Discovery angelegt und 
 Wenn du bisher die manuelle `sensor.yaml` verwendet hast, kannst du **ohne Verlust historischer Messdaten oder Energie-Dashboard-Verläufe** auf die automatischen Sensoren umsteigen!
 
 ### 💡 Warum bleiben deine Daten erhalten?
-In Home Assistant hängen alle Langzeitstatistiken (LTS) und Verläufe im Energie-Dashboard ausschließlich an der **`entity_id`** (z. B. `sensor.tagesnetzbezug`). Das Add-on ist so vorkonfiguriert, dass es bei deutscher Spracheinstellung **exakt dieselben Entity-IDs** erzeugt wie die frühere `sensor.yaml`.
+In Home Assistant hängen alle Langzeitstatistiken (LTS) und Verläufe im Energie-Dashboard ausschließlich an der **`entity_id`** (z. B. `sensor.daily_grid_buy`). Das Add-on ist mit `entity_naming: legacy` so vorkonfiguriert, dass es **exakt dieselben Entity-IDs** erzeugt wie deine bisherige `sensor.yaml`.
 
 ### Schritt-für-Schritt Anleitung:
 
 1. **Add-on aktualisieren & starten:**
-   - Installiere Version **0.1.3** oder neuer und starte das Add-on. Unter MQTT erscheint das Gerät *„LG ESS“*.
+   - Installiere Version **0.1.4** und starte das Add-on. Unter MQTT erscheint das Gerät *„LG ESS“*.
 2. **Alte Template-Sensoren auskommentieren:**
    - Öffne deine `configuration.yaml` und kommentiere die Zeile aus:
      ```yaml
@@ -106,24 +110,25 @@ In Home Assistant hängen alle Langzeitstatistiken (LTS) und Verläufe im Energi
    - Die alten Sensoren erscheinen jetzt als *„Nicht verfügbar“* (ausgegraut). Klicke sie an und wähle **„Löschen“**.  
      *(Keine Sorge: Die historischen Datenbank-Statistiken werden hierbei nicht gelöscht, nur der alte Template-Eintrag wird freigegeben!)*
 4. **Nahtlose Weiterführung:**
-   - Die neuen MQTT-Sensoren übernehmen automatisch die gewohnten IDs (z. B. `sensor.tagesnetzbezug`).
+   - Die neuen MQTT-Sensoren übernehmen automatisch die gewohnten IDs (z. B. `sensor.daily_grid_buy`).
    - Falls ein Sensor vorübergehend als `_2` angelegt wurde: Einfach auf den Sensor klicken ➔ **Zahnrad (Einstellungen)** ➔ Entitäts-ID auf den Originalnamen ändern.
    - Dein Energie-Dashboard und alle Lovelace-Karten laufen **sofort ohne Anpassung weiter**!
 
 ### 1:1 Entity-ID Übersicht:
 
-| Messwert | Bisherige Entity-ID (`sensor.yaml`) | Neue automatische MQTT Entity-ID (DE) |
+| Messwert | Historische Entity-ID (`entity_naming: legacy`) | Neue deutsche Entity-ID (`entity_naming: modern`) |
 | :--- | :--- | :--- |
-| **Tagesnetzbezug** | `sensor.tagesnetzbezug` | `sensor.tagesnetzbezug` ✅ |
-| **Tagesnetzeinspeisung** | `sensor.tagesnetzeinspeisung` | `sensor.tagesnetzeinspeisung` ✅ |
-| **Tages-Solarerzeugung** | `sensor.tages_solarerzeugung` | `sensor.tages_solarerzeugung` ✅ |
-| **Tages-Batterieladung** | `sensor.tages_batterieladung` | `sensor.tages_batterieladung` ✅ |
-| **Tages-Batterieentladung** | `sensor.tages_batterieentladung` | `sensor.tages_batterieentladung` ✅ |
-| **Tages-Hausverbrauch** | `sensor.tages_hausverbrauch_gesamt` | `sensor.tages_hausverbrauch_gesamt` ✅ |
-| **Live Netzeinspeisung** | `sensor.aktuelle_netzeinspeisung` | `sensor.aktuelle_netzeinspeisung` ✅ |
-| **Live Netzbezug** | `sensor.aktueller_netzbezug` | `sensor.aktueller_netzbezug` ✅ |
-| **Live Batterieladung** | `sensor.aktuelle_batterieladung` | `sensor.aktuelle_batterieladung` ✅ |
-| **Live Batterieentladung** | `sensor.aktuelle_batterientladung` | `sensor.aktuelle_batterientladung` ✅ |
-| **Live Solarerzeugung** | `sensor.aktuelle_pv_erzeugung_gesamt` | `sensor.aktuelle_pv_erzeugung_gesamt` ✅ |
-| **Batterieladestand (%)** | `sensor.batterie_ladestand` | `sensor.batterie_ladestand` ✅ |
-| **Autarkiegrad (%)** | `sensor.autarkie_grad_heute` | `sensor.autarkie_grad_heute` ✅ |
+| **Tagesnetzbezug** | `sensor.daily_grid_buy` ✅ | `sensor.tagesnetzbezug` |
+| **Tagesnetzeinspeisung** | `sensor.energy_sell_today` ✅ | `sensor.tagesnetzeinspeisung` |
+| **Tages-Solarerzeugung** | `sensor.energy_generation_today` ✅ | `sensor.tages_solarerzeugung` |
+| **Tages-Batterieladung** | `sensor.energy_batt_charge_today` ✅ | `sensor.tages_batterieladung` |
+| **Tages-Batterieentladung** | `sensor.energy_batt_discharge_today` ✅ | `sensor.tages_batterieentladung` |
+| **Tages-Hausverbrauch** | `sensor.daily_verbrauch_gesamt` ✅ | `sensor.tages_hausverbrauch_gesamt` |
+| **Live Netzeinspeisung** | `sensor.actual_grid_sell` ✅ | `sensor.aktuelle_netzeinspeisung` |
+| **Live Netzbezug** | `sensor.actual_grid_buy` ✅ | `sensor.aktueller_netzbezug` |
+| **Live Batterieladung** | `sensor.actual_battery_charge` ✅ | `sensor.aktuelle_batterieladung` |
+| **Live Batterieentladung** | `sensor.actual_battery_discharge` ✅ | `sensor.aktuelle_batterientladung` |
+| **Live Solarerzeugung** | `sensor.actual_generation_pv_full` ✅ | `sensor.aktuelle_pv_erzeugung_gesamt` |
+| **Batterieladestand (%)** | `sensor.battery_load_percent` ✅ | `sensor.batterie_ladestand` |
+| **Autarkiegrad (%)** | `sensor.solaredge_calculated_self_sufficiency` ✅ | `sensor.autarkie_grad_heute` |
+| **Eigenverbrauchsrate (%)** | `sensor.energy_day_self_consumption_rate` ✅ | `sensor.eigenverbrauchsrate_heute` |

@@ -53,6 +53,7 @@ INTERVAL=$(bashio::config 'interval_seconds' '5')
 AUTO_CREATE=$(bashio::config 'auto_create_sensors' 'true')
 CONFIG_LANG=$(bashio::config 'sensor_language' 'auto')
 POWER_UNIT=$(bashio::config 'power_unit' 'kW')
+ENTITY_NAMING=$(bashio::config 'entity_naming' 'legacy')
 LEGACY_SENSORS=$(bashio::config 'hass_autoconfig_sensors' '')
 
 # Determine language
@@ -78,7 +79,7 @@ else
 fi
 
 if [ "$AUTO_CREATE" = "true" ]; then
-    bashio::log.info "Automatische Sensorerstellung (MQTT Auto-Discovery): AKTIVIERT (Sprache: ${SENSOR_LANG}, Einheit: ${POWER_UNIT})"
+    bashio::log.info "Automatische Sensorerstellung (MQTT Auto-Discovery): AKTIVIERT (Schema: ${ENTITY_NAMING}, Sprache: ${SENSOR_LANG}, Einheit: ${POWER_UNIT})"
 else
     bashio::log.info "Automatische Sensorerstellung (MQTT Auto-Discovery): DEAKTIVIERT"
 fi
@@ -92,6 +93,7 @@ ARGS+=("--interval_seconds" "${INTERVAL}")
 ARGS+=("--auto_create_sensors" "${AUTO_CREATE}")
 ARGS+=("--sensor_language" "${SENSOR_LANG}")
 ARGS+=("--power_unit" "${POWER_UNIT}")
+ARGS+=("--entity_naming" "${ENTITY_NAMING}")
 
 if bashio::config.has_value 'ess_host'; then
     ESS_HOST=$(bashio::config 'ess_host')

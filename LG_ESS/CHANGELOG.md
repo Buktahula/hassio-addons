@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.4
+- **Konfigurierbares Namensschema (`entity_naming: legacy / modern`)**:
+  - **`legacy` (Standard)**: Verwendet exakt die historischen Entity-IDs der ursprünglichen 2023er `sensor.yaml` (`sensor.daily_grid_buy`, `sensor.energy_sell_today`, `sensor.energy_generation_today`, `sensor.actual_grid_sell`, etc.). Dadurch bleiben alle bestehenden Dashboards und Langzeitstatistiken im Energie-Dashboard **sofort nahtlos erhalten**!
+  - **`modern`**: Verwendet die neuen deutsch lokalisierten Entity-IDs (`sensor.tagesnetzbezug`, `sensor.tagesnetzeinspeisung`, etc.).
+
 ## 0.1.3
 - **MQTT Auto-Discovery für alle Sensoren**: Kein manuelles Bearbeiten der `sensor.yaml` oder `configuration.yaml` mehr nötig! Alle Entitäten erscheinen vollautomatisch unter einem einheitlichen "LG ESS"-Gerät.
 - **Automatische Spracherkennung (`sensor_language: auto`)**: Erkennt die eingestellte Sprache von Home Assistant (Deutsch oder Englisch) und benennt alle Sensoren passend. Manuelle Sprachwahl (`de` oder `en`) ebenfalls möglich.
