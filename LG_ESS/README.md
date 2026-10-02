@@ -128,7 +128,10 @@ In Home Assistant hängen alle Langzeitstatistiken (LTS) und Verläufe im Energi
 | **Live Netzbezug** | `sensor.actual_grid_buy` ✅ | `sensor.aktueller_netzbezug` |
 | **Live Batterieladung** | `sensor.actual_battery_charge` ✅ | `sensor.aktuelle_batterieladung` |
 | **Live Batterieentladung** | `sensor.actual_battery_discharge` ✅ | `sensor.aktuelle_batterientladung` |
-| **Live Solarerzeugung** | `sensor.actual_generation_pv_full` ✅ | `sensor.aktuelle_pv_erzeugung_gesamt` |
+| **Live Solar Gesamt** | `sensor.actual_generation_pv_full` ✅ | `sensor.aktuelle_pv_erzeugung_gesamt` |
+| **Live Solar String 1** | `sensor.actual_generation_pv_1` ✅ | `sensor.aktuelle_pv_erzeugung_string_1` |
+| **Live Solar String 2** | `sensor.actual_generation_pv_2` ✅ | `sensor.aktuelle_pv_erzeugung_string_2` |
+| **Live Solar String 3** | `sensor.actual_generation_pv_3` ✅ | `sensor.aktuelle_pv_erzeugung_string_3` |
 | **Batterieladestand (%)** | `sensor.battery_load_percent` ✅ | `sensor.batterie_ladestand` |
 | **Autarkiegrad (%)** | `sensor.solaredge_calculated_self_sufficiency` ✅ | `sensor.autarkie_grad_heute` |
 | **Eigenverbrauchsrate (%)** | `sensor.energy_day_self_consumption_rate` ✅ | `sensor.eigenverbrauchsrate_heute` |

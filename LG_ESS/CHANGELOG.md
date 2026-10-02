@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.5
+- **3. PV-String Unterstützung**:
+  - `pv3_power`, `pv3_voltage` und `pv3_current` zur Standard-Konfiguration (`hass_autoconfig_sensors`) hinzugefügt.
+  - Sensor für den 3. String in MQTT Auto-Discovery (`sensor.actual_generation_pv_3` / `sensor.aktuelle_pv_erzeugung_string_3`) und `sensor.pv3_voltage` integriert.
+  - `sensor.yaml` um den 3. String ergänzt.
+
 ## 0.1.4
 - **Konfigurierbares Namensschema (`entity_naming: legacy / modern`)**:
   - **`legacy` (Standard)**: Verwendet exakt die historischen Entity-IDs der ursprünglichen 2023er `sensor.yaml` (`sensor.daily_grid_buy`, `sensor.energy_sell_today`, `sensor.energy_generation_today`, `sensor.actual_grid_sell`, etc.). Dadurch bleiben alle bestehenden Dashboards und Langzeitstatistiken im Energie-Dashboard **sofort nahtlos erhalten**!

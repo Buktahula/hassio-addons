@@ -81,6 +81,13 @@
       state_class: measurement
       state: "{{ (states('sensor.ess_ess_common_pv_pv2_power') | float(0) * 0.001) | round(3) }}"
 
+    - name: "Aktuelle PV-Erzeugung String 3"
+      unique_id: lgess_actual_generation_pv_3
+      unit_of_measurement: "kW"
+      device_class: power
+      state_class: measurement
+      state: "{{ (states('sensor.ess_ess_common_pv_pv3_power') | float(0) * 0.001) | round(3) }}"
+
     - name: "Aktueller Hausverbrauch"
       unique_id: lgess_actual_consuming_house
       unit_of_measurement: "kW"
