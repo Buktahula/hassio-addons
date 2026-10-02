@@ -47,6 +47,9 @@ Beispielkonfiguration im Add-on-Reiter:
 ess_password: "dein_ess_passwort"
 ess_host: "" # Optional: Feste IP-Adresse (z. B. 192.168.1.150), falls Auto-Erkennung nicht greift
 interval_seconds: 5 # Abfrage-Intervall in Sekunden (Standard: 5)
+auto_create_sensors: true # Automatisch Home Assistant Sensoren via MQTT erstellen
+sensor_language: "auto" # "auto" (Systemsprache von HA), "de" (Deutsch) oder "en" (Englisch)
+power_unit: "kW" # "kW" (Standard) oder "W" für aktuelle Leistungswerte
 mqtt_server: "" # Optional: Nur nötig bei externem MQTT-Broker
 mqtt_port: 1883
 mqtt_user: ""
@@ -56,22 +59,27 @@ mqtt_password: ""
 * **`ess_password`** *(Pflicht)*: Das ermittelte Passwort des LG ESS.
 * **`ess_host`** *(Optional)*: Die IP-Adresse oder der Hostname des LG ESS. Wenn leer, wird der Wechselrichter automatisch per mDNS/Broadcast im lokalen Netzwerk gesucht.
 * **`interval_seconds`** *(Standard: 5)*: Aktualisierungsintervall in Sekunden.
+* **`auto_create_sensors`** *(Standard: true)*: Legt alle Sensoren und Schalter vollautomatisch als Home Assistant Entitäten unter einem "LG ESS" Gerät an.
+* **`sensor_language`** *(Standard: auto)*: Erkennt automatisch die Systemsprache von Home Assistant und benennt die Sensoren auf Deutsch oder Englisch. Kann auch fest auf `de` oder `en` gestellt werden.
+* **`power_unit`** *(Standard: kW)*: Einheit für Live-Leistungswerte (`kW` oder `W`).
 * **`mqtt_*`** *(Optional)*: Nur angeben, wenn ein externer MQTT-Server außerhalb von Home Assistant genutzt wird.
 
 ---
 
-## ⚡ Einbindung in das Home Assistant Energie-Dashboard
+## ⚡ Automatische Sensor-Erstellung & Energie-Dashboard
 
-In der Datei [`sensor.yaml`](sensor.yaml) findest du fertig vorkonfigurierte Sensoren für Home Assistant.
+Wenn `auto_create_sensors: true` aktiv ist, musst du **keine einzige Zeile YAML** schreiben!
 
-Kopiere den Inhalt der Datei in deine Home Assistant `configuration.yaml` unter `template:` (oder per `template: !include sensor.yaml`).
+Alle Sensoren und Schalter werden automatisch erstellt und unter **Einstellungen ➔ Geräte & Dienste ➔ MQTT ➔ Geräte ➔ LG ESS** gruppiert.
 
 ### Zuordnung im Energie-Dashboard (**Einstellungen ➔ Dashboards ➔ Energie**):
 
-| Bereich im Energie-Dashboard | Zu wählender Sensor |
-| :--- | :--- |
-| **Netzverbrauch ➔ Netzbezug** | `sensor.tagesnetzbezug` (`kWh`) |
-| **Netzverbrauch ➔ Rückeinspeisung** | `sensor.tagesnetzeinspeisung` (`kWh`) |
-| **Sonnenkollektoren ➔ Solarproduktion** | `sensor.tages_solarerzeugung` (`kWh`) |
-| **Batteriesysteme ➔ In Batterie geladen** | `sensor.tages_batterieladung` (`kWh`) |
-| **Batteriesysteme ➔ Aus Batterie entnommen** | `sensor.tages_batterieentladung` (`kWh`) |
+| Bereich im Energie-Dashboard | Zu wählender Sensor (DE) | Zu wählender Sensor (EN) |
+| :--- | :--- | :--- |
+| **Netzverbrauch ➔ Netzbezug** | `sensor.lgess_daily_grid_buy` *(Tagesnetzbezug)* | `sensor.lgess_daily_grid_buy` *(Daily Grid Consumption)* |
+| **Netzverbrauch ➔ Rückeinspeisung** | `sensor.lgess_energy_sell_today` *(Tagesnetzeinspeisung)* | `sensor.lgess_energy_sell_today` *(Daily Grid Feed-in)* |
+| **Sonnenkollektoren ➔ Solarproduktion** | `sensor.lgess_energy_generation_today` *(Tages-Solarerzeugung)* | `sensor.lgess_energy_generation_today` *(Daily Solar Generation)* |
+| **Batteriesysteme ➔ In Batterie geladen** | `sensor.lgess_energy_batt_charge_today` *(Tages-Batterieladung)* | `sensor.lgess_energy_batt_charge_today` *(Daily Battery Charge)* |
+| **Batteriesysteme ➔ Aus Batterie entnommen** | `sensor.lgess_energy_batt_discharge_today` *(Tages-Batterieentladung)* | `sensor.lgess_energy_batt_discharge_today` *(Daily Battery Discharge)* |
+
+> ℹ️ **Manuelle Template-Sensoren (`sensor.yaml`):** Für fortgeschrittene Anwender, die `auto_create_sensors: false` bevorzugen oder eigene Template-Sensoren definieren möchten, steht die Datei [`sensor.yaml`](sensor.yaml) weiterhin als Vorlage zur Verfügung.

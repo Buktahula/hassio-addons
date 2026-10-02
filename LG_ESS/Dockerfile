@@ -11,9 +11,10 @@ RUN \
         python3-dev \
     && pip install --no-cache-dir pyess setuptools \
     && apk del --no-network .build-dependencies \
-    && find /usr/local/lib -name "essmqtt.py" -exec sed -i "s/from distutils.util import strtobool/from setuptools._distutils.util import strtobool/" {} +
+    && find /usr/local/lib -name "essmqtt.py" -exec sed -i "s/from distutils.util import strtobool/from setuptools._distutils.util import strtobool/" {} + 2>/dev/null || true
 
 COPY data/run.sh /
-RUN chmod +x /run.sh
+COPY data/lgess_mqtt.py /usr/share/lgess_mqtt.py
+RUN chmod +x /run.sh /usr/share/lgess_mqtt.py
 
 CMD [ "/run.sh" ]

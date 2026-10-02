@@ -3,7 +3,7 @@ set -e
 
 bashio::log.info "Starting LG ESS Home Assistant Add-on..."
 
-# Fix deprecated distutils in Python 3.12+ for pyess
+# Fix deprecated distutils in Python 3.12+ for pyess if present
 find /usr/local/lib -name "essmqtt.py" -exec sed -i "s/from distutils.util import strtobool/from setuptools._distutils.util import strtobool/" {} + 2>/dev/null || true
 
 # 1. Validate ESS Password
@@ -48,9 +48,40 @@ if [ -z "$MQTT_HOST" ]; then
     exit 1
 fi
 
-# 3. Interval & Autoconfig Sensors
+# 3. Settings: Interval, Auto-Create Sensors, Language & Power Unit
 INTERVAL=$(bashio::config 'interval_seconds' '5')
-SENSORS=$(bashio::config 'hass_autoconfig_sensors')
+AUTO_CREATE=$(bashio::config 'auto_create_sensors' 'true')
+CONFIG_LANG=$(bashio::config 'sensor_language' 'auto')
+POWER_UNIT=$(bashio::config 'power_unit' 'kW')
+LEGACY_SENSORS=$(bashio::config 'hass_autoconfig_sensors' '')
+
+# Determine language
+SENSOR_LANG="de"
+if [ "$CONFIG_LANG" = "auto" ]; then
+    HA_LANG=""
+    if bashio::var.has_value "${SUPERVISOR_TOKEN}"; then
+        HA_LANG=$(curl -s -H "Authorization: Bearer ${SUPERVISOR_TOKEN}" http://supervisor/core/info 2>/dev/null | jq -r '.data.language // empty' 2>/dev/null || true)
+    fi
+    if [[ "$HA_LANG" =~ ^de ]]; then
+        SENSOR_LANG="de"
+        bashio::log.info "Home Assistant Systemsprache als Deutsch erkannt ('${HA_LANG}'). Sensoren werden auf Deutsch angelegt."
+    elif [ -n "$HA_LANG" ]; then
+        SENSOR_LANG="en"
+        bashio::log.info "Home Assistant Systemsprache erkannt: '${HA_LANG}'. Sensoren werden auf Englisch angelegt."
+    else
+        SENSOR_LANG="de"
+        bashio::log.info "Home Assistant Systemsprache nicht ermittelbar, verwende Standard: Deutsch (de)."
+    fi
+else
+    SENSOR_LANG="${CONFIG_LANG}"
+    bashio::log.info "Sensorsprache manuell konfiguriert: ${SENSOR_LANG}"
+fi
+
+if [ "$AUTO_CREATE" = "true" ]; then
+    bashio::log.info "Automatische Sensorerstellung (MQTT Auto-Discovery): AKTIVIERT (Sprache: ${SENSOR_LANG}, Einheit: ${POWER_UNIT})"
+else
+    bashio::log.info "Automatische Sensorerstellung (MQTT Auto-Discovery): DEAKTIVIERT"
+fi
 
 # 4. Prepare CLI Arguments
 ARGS=()
@@ -58,6 +89,9 @@ ARGS+=("--ess_password" "${ESS_PASSWORD}")
 ARGS+=("--mqtt_server" "${MQTT_HOST}")
 ARGS+=("--mqtt_port" "${MQTT_PORT}")
 ARGS+=("--interval_seconds" "${INTERVAL}")
+ARGS+=("--auto_create_sensors" "${AUTO_CREATE}")
+ARGS+=("--sensor_language" "${SENSOR_LANG}")
+ARGS+=("--power_unit" "${POWER_UNIT}")
 
 if bashio::config.has_value 'ess_host'; then
     ESS_HOST=$(bashio::config 'ess_host')
@@ -73,17 +107,16 @@ fi
 if [ -n "$MQTT_PASSWORD" ]; then
     ARGS+=("--mqtt_password" "${MQTT_PASSWORD}")
 fi
-
-if [ -n "$SENSORS" ]; then
-    ARGS+=("--hass_autoconfig_sensors" "${SENSORS}")
+if [ -n "$LEGACY_SENSORS" ]; then
+    ARGS+=("--hass_autoconfig_sensors" "${LEGACY_SENSORS}")
 fi
 
-bashio::log.info "Starte essmqtt (Verbinde mit MQTT-Server ${MQTT_HOST}:${MQTT_PORT})..."
+bashio::log.info "Starte LG ESS MQTT Bridge (Verbinde mit MQTT-Server ${MQTT_HOST}:${MQTT_PORT})..."
 
-# 5. Continuous run loop with auto-reconnect on temporary network drop
+# 5. Continuous run loop with auto-reconnect
 while true; do
-    if /usr/local/bin/essmqtt "${ARGS[@]}"; then
-        bashio::log.warning "essmqtt wurde beendet. Starte in 5 Sekunden neu..."
+    if python3 /usr/share/lgess_mqtt.py "${ARGS[@]}"; then
+        bashio::log.warning "lgess_mqtt wurde beendet. Starte in 5 Sekunden neu..."
     else
         bashio::log.warning "Verbindung zu LG ESS oder MQTT unterbrochen. Neuer Versuch in 5 Sekunden..."
     fi

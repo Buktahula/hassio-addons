@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.3
+- **MQTT Auto-Discovery für alle Sensoren**: Kein manuelles Bearbeiten der `sensor.yaml` oder `configuration.yaml` mehr nötig! Alle Entitäten erscheinen vollautomatisch unter einem einheitlichen "LG ESS"-Gerät.
+- **Automatische Spracherkennung (`sensor_language: auto`)**: Erkennt die eingestellte Sprache von Home Assistant (Deutsch oder Englisch) und benennt alle Sensoren passend. Manuelle Sprachwahl (`de` oder `en`) ebenfalls möglich.
+- **Konfigurierbare Sensor-Erstellung (`auto_create_sensors`)**: In den Add-on-Optionen kann die automatische Erstellung ein- oder ausgeschaltet werden.
+- **Wählbare Leistungseinheit (`power_unit`)**: Live-Leistungswerte wahlweise in `kW` (Standard) oder `W`.
+- **Vollständige Energie-Dashboard-Kompatibilität**: Tageswerte (Netzbezug, Einspeisung, Solar, Batterie) direkt im offiziellen Energie-Dashboard auswählbar.
+- **Integrierte Schalter**: Wintermodus, Schnellladung und ESS-Aktivierung als MQTT-Switches unter dem LG ESS Gerät.
+- **Eigenes robustes Bridge-Skript (`lgess_mqtt.py`)**: Behebt Python 3.12 `distutils`-Inkompatibilitäten und fängt MQTT-Disconnects sauber ab.
+
 ## 0.1.2
 - Fix: `distutils` Kompatibilität für Python 3.12 (`setuptools`)
 
