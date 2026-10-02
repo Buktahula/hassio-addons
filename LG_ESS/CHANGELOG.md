@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.7
+- **Volle Abwärtskompatibilität für pyess-Rohsensoren (`legacy_raw_sensors: true`)**:
+  - Bringt die klassischen `sensor.ess_ess_*` Entitäten für alle Nutzer zurück, die bisher direkt diese Rohdaten in ihren Lovelace-Dashboards oder Automatisierungen verwendet haben.
+  - Repariert automatisch fehlerhafte Einheiten aus früheren pyess-Versionen (z. B. saubere `%` statt des fehlerhaften `A` für `current_day_self_consumption`).
+  - Kann über die neue Add-on-Option `legacy_raw_sensors: false` deaktiviert werden, falls ein aufgeräumtes System nur mit den neuen Standard-Sensoren gewünscht ist.
+  - Gewährleistet das „Zero Breaking Changes“-Prinzip: Egal ob Nutzer von der alten `sensor.yaml` kommen, Rohsensoren verwendet haben oder neu einsteigen – alles funktioniert direkt nach dem Update weiter!
+
 ## 0.1.6
 - **Automatische Migrations-Diagnose (`run_diagnostics`)**:
   - Erkennt automatisch beim Start, wenn alte, inaktive YAML-Sensoren (z. B. aus früheren `template.yaml`- oder `sensor.yaml`-Konfigurationen) die Entitäts-IDs blockieren und Home Assistant deshalb ein `_2` angehängt hat (z. B. `sensor.daily_grid_buy_2`).

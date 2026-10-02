@@ -55,6 +55,10 @@ CONFIG_LANG=$(bashio::config 'sensor_language' 'auto')
 POWER_UNIT=$(bashio::config 'power_unit' 'kW')
 ENTITY_NAMING=$(bashio::config 'entity_naming' 'legacy')
 LEGACY_SENSORS=$(bashio::config 'hass_autoconfig_sensors' '')
+LEGACY_RAW_SENSORS="true"
+if bashio::config.has_value 'legacy_raw_sensors'; then
+    LEGACY_RAW_SENSORS=$(bashio::config 'legacy_raw_sensors')
+fi
 
 # Determine language
 SENSOR_LANG="de"
@@ -84,6 +88,10 @@ else
     bashio::log.info "Automatische Sensorerstellung (MQTT Auto-Discovery): DEAKTIVIERT"
 fi
 
+if [ "$LEGACY_RAW_SENSORS" = "true" ]; then
+    bashio::log.info "Klassische pyess Rohdaten-Sensoren (sensor.ess_ess_*): AKTIVIERT (Volle Abwärtskompatibilität)"
+fi
+
 # 4. Prepare CLI Arguments
 ARGS=()
 ARGS+=("--ess_password" "${ESS_PASSWORD}")
@@ -94,6 +102,7 @@ ARGS+=("--auto_create_sensors" "${AUTO_CREATE}")
 ARGS+=("--sensor_language" "${SENSOR_LANG}")
 ARGS+=("--power_unit" "${POWER_UNIT}")
 ARGS+=("--entity_naming" "${ENTITY_NAMING}")
+ARGS+=("--legacy_raw_sensors" "${LEGACY_RAW_SENSORS}")
 
 if bashio::config.has_value 'ess_host'; then
     ESS_HOST=$(bashio::config 'ess_host')

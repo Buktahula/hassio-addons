@@ -48,6 +48,7 @@ ess_password: "dein_ess_passwort"
 ess_host: "" # Optional: Feste IP-Adresse (z. B. 192.168.1.150), falls Auto-Erkennung nicht greift
 interval_seconds: 5 # Abfrage-Intervall in Sekunden (Standard: 5)
 auto_create_sensors: true # Automatisch Home Assistant Sensoren via MQTT erstellen
+legacy_raw_sensors: true # Klassische sensor.ess_ess_* Rohdaten-Sensoren für volle Abwärtskompatibilität aktiv lassen
 entity_naming: "legacy" # "legacy" (alte 2023er sensor.yaml IDs: sensor.daily_grid_buy etc.) oder "modern" (sensor.tagesnetzbezug etc.)
 sensor_language: "auto" # "auto" (Systemsprache von HA), "de" (Deutsch) oder "en" (Englisch)
 power_unit: "kW" # "kW" (Standard) oder "W" für aktuelle Leistungswerte
@@ -61,6 +62,7 @@ mqtt_password: ""
 * **`ess_host`** *(Optional)*: Die IP-Adresse oder der Hostname des LG ESS. Wenn leer, wird der Wechselrichter automatisch per mDNS/Broadcast im lokalen Netzwerk gesucht.
 * **`interval_seconds`** *(Standard: 5)*: Aktualisierungsintervall in Sekunden.
 * **`auto_create_sensors`** *(Standard: true)*: Legt alle Sensoren und Schalter vollautomatisch als Home Assistant Entitäten unter einem einheitlichen „LG ESS“ Gerät an.
+* **`legacy_raw_sensors`** *(Standard: true)*: Stellt für bestehende Dashboards alle bisherigen `sensor.ess_ess_*` Rohdaten-Sensoren mit reparierten Einheiten bereit (Zero Breaking Changes). Kann auf `false` gesetzt werden, wenn nur die neuen Standard-Sensoren gewünscht sind.
 * **`entity_naming`** *(Standard: legacy)*:
   * **`legacy` (Empfohlen für bestehende Installationen)**: Verwendet exakt die historischen Entity-IDs der ursprünglichen 2023er `sensor.yaml` (`sensor.daily_grid_buy`, `sensor.energy_sell_today`, `sensor.energy_generation_today`, `sensor.actual_grid_sell` etc.). Deine bestehenden Dashboards und alle Verläufe im Energie-Dashboard bleiben **ohne jede Änderung erhalten**!
   * **`modern`**: Verwendet die neuen, voll deutsch lokalisierten Entity-IDs (`sensor.tagesnetzbezug`, `sensor.tagesnetzeinspeisung`, etc.).
@@ -98,7 +100,7 @@ In Home Assistant hängen alle Langzeitstatistiken (LTS) und Verläufe im Energi
 ### Schritt-für-Schritt Anleitung:
 
 1. **Add-on aktualisieren & starten:**
-   - Installiere Version **0.1.6** (oder neuer) und starte das Add-on. Unter MQTT erscheint das Gerät *„LG ESS“*.
+   - Installiere Version **0.1.7** (oder neuer) und starte das Add-on. Unter MQTT erscheint das Gerät *„LG ESS“*.
 2. **Alte Template-Sensoren auskommentieren:**
    - Öffne deine `configuration.yaml` (oder `template.yaml`) und kommentiere die alten LG ESS Template-Sensoren aus.
    - Starte Home Assistant neu (oder gehe auf *Entwicklerwerkzeuge ➔ YAML ➔ „Template-Entitäten neu laden“*).
@@ -136,3 +138,15 @@ In Home Assistant hängen alle Langzeitstatistiken (LTS) und Verläufe im Energi
 | **Batterieladestand (%)** | `sensor.battery_load_percent` ✅ | `sensor.batterie_ladestand` |
 | **Autarkiegrad (%)** | `sensor.solaredge_calculated_self_sufficiency` ✅ | `sensor.autarkie_grad_heute` |
 | **Eigenverbrauchsrate (%)** | `sensor.energy_day_self_consumption_rate` ✅ | `sensor.eigenverbrauchsrate_heute` |
+
+---
+
+## ❓ Häufige Fragen & Fehlerbehebung (FAQ)
+
+### 1. „Die Maßeinheit von current_day_self_consumption wurde geändert und kann nicht in die zuvor gespeicherte Maßeinheit 'A' konvertiert werden.“
+* **Ursache:** Ältere `pyess`-Versionen hatten einen Bug, bei dem Sensoren mit dem Wort `current` im Namen fälschlicherweise die Einheit **A (Ampere)** erhielten, obwohl es sich um eine prozentuale Quote handelt.
+* **Lösung:** Klicke in Home Assistant unter *Entwicklerwerkzeuge ➔ Statistik* (oder direkt in der Reparatur-Meldung) einfach auf **„Statistiken löschen“** bzw. **„Bereinigen“**. Das Add-on liefert ab sofort saubere `%`-Werte.
+
+### 2. Was passiert mit meinen alten `sensor.ess_ess_*` Rohdaten-Sensoren?
+* Dank der Option **`legacy_raw_sensors: true`** (Standard) werden alle 65 klassischen Rohsensoren weiterhin via MQTT bereitgestellt. Deine bestehenden Lovelace-Karten oder Automatisierungen laufen ohne Unterbrechung weiter!
+* Wenn du ein sauberes System ohne Rohsensoren bevorzugst, kannst du `legacy_raw_sensors: false` setzen und komplett auf die neuen Standard-Sensoren umsteigen.

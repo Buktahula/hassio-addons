@@ -1,5 +1,5 @@
 ---
-version: "0.1.6"
+version: "0.1.7"
 slug: lg_ess
 name: "LG ESS"
 image: "buktahula/lgess-{arch}"
@@ -23,6 +23,7 @@ options:
   mqtt_password: ""
   interval_seconds: 5
   auto_create_sensors: true
+  legacy_raw_sensors: true
   entity_naming: "legacy"
   sensor_language: "auto"
   power_unit: "kW"
@@ -36,6 +37,7 @@ schema:
   mqtt_password: password?
   interval_seconds: int(1,600)
   auto_create_sensors: bool?
+  legacy_raw_sensors: bool?
   entity_naming: list(legacy|modern)?
   sensor_language: list(auto|de|en)?
   power_unit: list(kW|W)?

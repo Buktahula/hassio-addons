@@ -54,7 +54,7 @@ DEVICE_INFO = {
     "name": "LG ESS",
     "manufacturer": "LG Electronics",
     "model": "ESS Home",
-    "sw_version": "0.1.6",
+    "sw_version": "0.1.7",
 }
 
 # Sensor definitions with localized names, units, device classes, and extractors
@@ -514,6 +514,93 @@ async def publish_discovery(mqtt_client, lang="de", power_unit="kW", entity_nami
     logger.info(f"Successfully published {len(SENSOR_DEFINITIONS)} sensors and {len(SWITCH_DEFINITIONS)} switches to MQTT Discovery.")
 
 
+DEFAULT_LEGACY_RAW_SENSORS = (
+    "ess/common/BATT/soc,ess/home/statistics/pcs_pv_total_power,ess/common/GRID/active_power,"
+    "ess/common/LOAD/load_power,ess/home/statistics/pcs_pv_total_power,ess/home/statistics/batconv_power,"
+    "ess/home/statistics/bat_use,ess/home/statistics/bat_status,ess/home/statistics/bat_user_soc,"
+    "ess/home/statistics/load_power,ess/home/statistics/load_today,ess/home/statistics/grid_power,"
+    "ess/home/statistics/current_day_self_consumption,ess/home/statistics/current_pv_generation_sum,"
+    "ess/home/statistics/current_grid_feed_in_energy,ess/home/direction/is_direct_consuming_,"
+    "ess/home/direction/is_battery_charging_,ess/home/direction/is_battery_discharging_,"
+    "ess/home/direction/is_grid_selling_,ess/home/direction/is_grid_buying_,"
+    "ess/home/direction/is_charging_from_grid_,ess/common/PV/brand,ess/common/PV/capacity,"
+    "ess/common/PV/pv1_voltage,ess/common/PV/pv2_voltage,ess/common/PV/pv3_voltage,"
+    "ess/common/PV/pv1_power,ess/common/PV/pv2_power,ess/common/PV/pv3_power,"
+    "ess/common/PV/pv1_current,ess/common/PV/pv2_current,ess/common/PV/pv3_current,"
+    "ess/common/PV/today_pv_generation_sum,ess/common/PV/today_month_pv_generation_sum,"
+    "ess/common/BATT/status,ess/common/BATT/soc,ess/common/BATT/dc_power,"
+    "ess/common/BATT/winter_setting,ess/common/BATT/winter_status,ess/common/BATT/safty_soc,"
+    "ess/common/BATT/today_batt_discharge_enery,ess/common/BATT/today_batt_charge_energy,"
+    "ess/common/BATT/month_batt_charge_energy,ess/common/BATT/month_batt_discharge_energy,"
+    "ess/common/GRID/active_power,ess/common/GRID/a_phase,ess/common/GRID/freq,"
+    "ess/common/GRID/today_grid_feed_in_energy,ess/common/GRID/today_grid_power_purchase_energy,"
+    "ess/common/GRID/month_grid_feed_in_energy,ess/common/GRID/month_grid_power_purchase_energy,"
+    "ess/common/LOAD/load_power,ess/common/LOAD/today_load_consumption_sum,"
+    "ess/common/LOAD/today_pv_direct_consumption_enegy,ess/common/LOAD/today_batt_discharge_enery,"
+    "ess/common/LOAD/today_grid_power_purchase_energy,ess/common/LOAD/month_load_consumption_sum,"
+    "ess/common/LOAD/month_pv_direct_consumption_energy,ess/common/LOAD/month_batt_discharge_energy,"
+    "ess/common/LOAD/month_grid_power_purchase_energy,ess/common/PCS/today_self_consumption,"
+    "ess/common/PCS/month_co2_reduction_accum,ess/common/PCS/today_pv_generation_sum,"
+    "ess/common/PCS/month_pv_generation_sum,ess/common/PCS/today_grid_feed_in_energy,"
+    "ess/common/PCS/month_grid_feed_in_energy,ess/common/PCS/pcs_stauts,"
+    "ess/common/PCS/feed_in_limitation,ess/common/PCS/operation_mode"
+)
+
+
+async def publish_legacy_raw_discovery(mqtt_client, sensor_list):
+    """Publishes MQTT discovery for legacy pyess raw sensors (sensor.ess_ess_*) for backward compatibility."""
+    if not sensor_list:
+        return
+    sensors = [s.strip() for s in sensor_list.split(",") if s.strip()]
+    logger.info(f"Publishing {len(sensors)} legacy pyess raw sensors (sensor.ess_ess_*) to MQTT Discovery...")
+    for sensor in sensors:
+        desc = {
+            "name": sensor,
+            "state_topic": sensor,
+            "unique_id": sensor.replace("/", ""),
+            "device": {
+                "identifiers": ["lgesss"],
+                "manufacturer": "LG",
+                "model": "ESS",
+                "name": "ESS",
+                "sw_version": "pyess",
+            },
+        }
+        sensor_lower = sensor.lower()
+        if "power" in sensor_lower:
+            desc["device_class"] = "power"
+            desc["unit_of_measurement"] = "W"
+            desc["state_class"] = "measurement"
+        elif "enegy" in sensor_lower or "energy" in sensor_lower or "enery" in sensor_lower or sensor_lower.endswith("_sum"):
+            desc["device_class"] = "energy"
+            desc["unit_of_measurement"] = "Wh"
+            desc["state_class"] = "total_increasing"
+            desc["icon"] = "mdi:gauge"
+        elif "soc" in sensor_lower or "self_consumption" in sensor_lower:
+            desc["unit_of_measurement"] = "%"
+            desc["state_class"] = "measurement"
+            if "soc" in sensor_lower:
+                desc["device_class"] = "battery"
+        elif sensor_lower.endswith("current"):
+            desc["device_class"] = "current"
+            desc["unit_of_measurement"] = "A"
+            desc["state_class"] = "measurement"
+        elif "voltage" in sensor_lower:
+            desc["device_class"] = "voltage"
+            desc["unit_of_measurement"] = "V"
+            desc["state_class"] = "measurement"
+        elif "freq" in sensor_lower:
+            desc["device_class"] = "frequency"
+            desc["unit_of_measurement"] = "Hz"
+            desc["state_class"] = "measurement"
+
+        node_type = "switch" if "control" in sensor else "sensor"
+        discovery_topic = f"homeassistant/{node_type}/{sensor.replace('/', '')}/config"
+        await mqtt_client.publish(discovery_topic, json.dumps(desc), retain=True, qos=1)
+
+    logger.info(f"Successfully published {len(sensors)} legacy pyess raw sensors to MQTT Discovery.")
+
+
 async def run_diagnostics(entity_naming="legacy", lang="de", delay=4):
     """
     Runs automated migration diagnostics via Home Assistant Supervisor API.
@@ -771,10 +858,12 @@ async def main():
     parser.add_argument("--power_unit", default="kW", choices=["kW", "W"], help="Power unit for real-time sensors")
     parser.add_argument("--entity_naming", default="legacy", choices=["legacy", "modern"], help="Naming schema: legacy (2023 sensor.yaml) or modern")
     parser.add_argument("--hass_autoconfig_sensors", default=None, help="Legacy pyess autoconfig list (optional)")
+    parser.add_argument("--legacy_raw_sensors", default="true", help="Publish pyess legacy raw MQTT discovery sensors (sensor.ess_ess_*)")
 
     args = parser.parse_args()
 
     auto_create = str_to_bool(args.auto_create_sensors)
+    legacy_raw = str_to_bool(args.legacy_raw_sensors)
     lang = "de" if str(args.sensor_language).lower().startswith("de") else "en"
     power_unit = args.power_unit
     entity_naming = args.entity_naming
@@ -807,6 +896,10 @@ async def main():
                 if auto_create:
                     await publish_discovery(client, lang=lang, power_unit=power_unit, entity_naming=entity_naming)
                     asyncio.create_task(run_diagnostics(entity_naming=entity_naming, lang=lang, delay=4))
+
+                if legacy_raw:
+                    raw_list = args.hass_autoconfig_sensors or DEFAULT_LEGACY_RAW_SENSORS
+                    await publish_legacy_raw_discovery(client, raw_list)
 
                 # Start control listener task
                 control_task = asyncio.create_task(handle_control(client, ess))
