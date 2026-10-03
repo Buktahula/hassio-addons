@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.8
+- **Fix für Legacy-Rohdaten-Sensoren (#13)**:
+  - Behebt ein Problem bei der Einheiten-Zuordnung für klassische `sensor.ess_ess_*` Sensoren: Sensoren wie `ess_ess_common_grid_today_grid_power_purchase_energy` (und die entsprechenden Monats-/Load-Sensoren), die sowohl `power` als auch `energy` im Namen tragen, werden nun prioritär als Energie-Sensoren mit der Einheit `Wh` (`device_class: energy`, `state_class: total_increasing`) registriert statt fälschlicherweise als `power` (`W`).
+  - Stellt sicher, dass bestehende Einbindungen dieser Rohsensoren im Home Assistant Energie-Dashboard oder in Langzeitstatistiken ohne Fehlermeldung erhalten bleiben.
+
 ## 0.1.7
 - **Volle Abwärtskompatibilität für pyess-Rohsensoren (`legacy_raw_sensors: true`)**:
   - Bringt die klassischen `sensor.ess_ess_*` Entitäten für alle Nutzer zurück, die bisher direkt diese Rohdaten in ihren Lovelace-Dashboards oder Automatisierungen verwendet haben.

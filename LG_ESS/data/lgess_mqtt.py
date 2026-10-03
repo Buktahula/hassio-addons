@@ -54,7 +54,7 @@ DEVICE_INFO = {
     "name": "LG ESS",
     "manufacturer": "LG Electronics",
     "model": "ESS Home",
-    "sw_version": "0.1.7",
+    "sw_version": "0.1.8",
 }
 
 # Sensor definitions with localized names, units, device classes, and extractors
@@ -567,15 +567,16 @@ async def publish_legacy_raw_discovery(mqtt_client, sensor_list):
             },
         }
         sensor_lower = sensor.lower()
-        if "power" in sensor_lower:
-            desc["device_class"] = "power"
-            desc["unit_of_measurement"] = "W"
-            desc["state_class"] = "measurement"
-        elif "enegy" in sensor_lower or "energy" in sensor_lower or "enery" in sensor_lower or sensor_lower.endswith("_sum"):
+        # Energy / Wh takes precedence over power (e.g. today_grid_power_purchase_energy contains 'power' but is an energy Wh sensor)
+        if "enegy" in sensor_lower or "energy" in sensor_lower or "enery" in sensor_lower or sensor_lower.endswith("_sum"):
             desc["device_class"] = "energy"
             desc["unit_of_measurement"] = "Wh"
             desc["state_class"] = "total_increasing"
             desc["icon"] = "mdi:gauge"
+        elif "power" in sensor_lower:
+            desc["device_class"] = "power"
+            desc["unit_of_measurement"] = "W"
+            desc["state_class"] = "measurement"
         elif "soc" in sensor_lower or "self_consumption" in sensor_lower:
             desc["unit_of_measurement"] = "%"
             desc["state_class"] = "measurement"

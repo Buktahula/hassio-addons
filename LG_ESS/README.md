@@ -100,7 +100,7 @@ In Home Assistant hängen alle Langzeitstatistiken (LTS) und Verläufe im Energi
 ### Schritt-für-Schritt Anleitung:
 
 1. **Add-on aktualisieren & starten:**
-   - Installiere Version **0.1.7** (oder neuer) und starte das Add-on. Unter MQTT erscheint das Gerät *„LG ESS“*.
+   - Installiere Version **0.1.8** (oder neuer) und starte das Add-on. Unter MQTT erscheint das Gerät *„LG ESS“*.
 2. **Alte Template-Sensoren auskommentieren:**
    - Öffne deine `configuration.yaml` (oder `template.yaml`) und kommentiere die alten LG ESS Template-Sensoren aus.
    - Starte Home Assistant neu (oder gehe auf *Entwicklerwerkzeuge ➔ YAML ➔ „Template-Entitäten neu laden“*).
