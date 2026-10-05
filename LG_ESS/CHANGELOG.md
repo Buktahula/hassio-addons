@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.9
+- **Fix für Wintermodus-Schalter (#14)**:
+  - Behebt die invertierte Steuerung des Wintermodus (`winter_mode`): Das Einschalten des Schalters in Home Assistant schaltet nun wie vorgesehen den Wintermodus am LG ESS ein (`winter_on`), das Ausschalten schaltet ihn aus (`winter_off`). Bisher war die Logik vertauscht, wodurch die Schalterstellung in Home Assistant und in der LG EnerVU App gegensätzlich war.
+  - **Live-Zustandssynchronisation**: Der Status des Wintermodus (`ess/sensors/winter_mode`) und der ESS-Aktivität (`ess/sensors/active`) wird nun in jedem Abfragezyklus direkt aus den Live-Telemetriedaten des Wechselrichters (`common["BATT"]["winter_setting"]` bzw. `home["operation"]["status"]`) synchronisiert. Bei Änderungen in der offiziellen LG-App oder am Wechselrichter aktualisiert sich der Schalter in Home Assistant automatisch nach wenigen Sekunden.
+  - Auch der Schnellladungs-Status (`fastcharge`) wird nun zyklisch aus den Batterieeinstellungen abgeglichen.
+- **Klarstellung zu den zwei MQTT-Geräten ("ESS" vs. "LG ESS")**:
+  - Bei aktiver Option `legacy_raw_sensors: true` (Standard) stellt das Add-on weiterhin das historische Gerät „ESS“ für die 65 pyess-Rohsensoren (`sensor.ess_ess_*`) bereit, um volle Abwärtskompatibilität für bestehende Installationen zu gewährleisten.
+  - Alle modernen, berechneten Sensoren sowie die Steuerungs-Schalter befinden sich im Gerät „LG ESS“. Wer die Rohsensoren nicht benötigt und nur ein einziges aufgeräumtes Gerät wünscht, kann `legacy_raw_sensors: false` in den Add-on-Optionen setzen.
+
 ## 0.1.8
 - **Fix für Legacy-Rohdaten-Sensoren (#13)**:
   - Behebt ein Problem bei der Einheiten-Zuordnung für klassische `sensor.ess_ess_*` Sensoren: Sensoren wie `ess_ess_common_grid_today_grid_power_purchase_energy` (und die entsprechenden Monats-/Load-Sensoren), die sowohl `power` als auch `energy` im Namen tragen, werden nun prioritär als Energie-Sensoren mit der Einheit `Wh` (`device_class: energy`, `state_class: total_increasing`) registriert statt fälschlicherweise als `power` (`W`).

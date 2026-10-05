@@ -54,7 +54,7 @@ DEVICE_INFO = {
     "name": "LG ESS",
     "manufacturer": "LG Electronics",
     "model": "ESS Home",
-    "sw_version": "0.1.8",
+    "sw_version": "0.1.9",
 }
 
 # Sensor definitions with localized names, units, device classes, and extractors
@@ -552,7 +552,7 @@ async def publish_legacy_raw_discovery(mqtt_client, sensor_list):
     if not sensor_list:
         return
     sensors = [s.strip() for s in sensor_list.split(",") if s.strip()]
-    logger.info(f"Publishing {len(sensors)} legacy pyess raw sensors (sensor.ess_ess_*) to MQTT Discovery...")
+    logger.info(f"Publishing {len(sensors)} legacy pyess raw sensors (sensor.ess_ess_*) to MQTT Discovery under device 'ESS'...")
     for sensor in sensors:
         desc = {
             "name": sensor,
@@ -776,9 +776,9 @@ async def handle_control(client, ess):
 
                     if "winter_mode" in topic:
                         if state:
-                            await ess.winter_off()
-                        else:
                             await ess.winter_on()
+                        else:
+                            await ess.winter_off()
                         await client.publish("ess/sensors/winter_mode", "ON" if state else "OFF", retain=True)
 
                     elif "fastcharge" in topic:
@@ -818,6 +818,8 @@ async def poll_loop(ess, client, interval_seconds=5, auto_create=True, lang="de"
             await recursive_publish_dict(client, "ess/home", home)
             await recursive_publish_dict(client, "ess/common", common)
 
+            loop_count += 1
+
             # 3. Publish computed sensors
             if auto_create:
                 for s in SENSOR_DEFINITIONS:
@@ -832,7 +834,28 @@ async def poll_loop(ess, client, interval_seconds=5, auto_create=True, lang="de"
                     except Exception as calc_err:
                         logger.debug(f"Calculation error for {s['id']}: {calc_err}")
 
-            loop_count += 1
+                # 4. Synchronize switch states with LG ESS live telemetry
+                try:
+                    batt_info = common.get("BATT", {})
+                    winter_val = batt_info.get("winter_setting")
+                    if winter_val is None:
+                        winter_val = batt_info.get("winter_status") or home.get("wintermode", {}).get("winter_status")
+                    if winter_val is not None:
+                        is_winter = str(winter_val).strip().lower() in ("on", "1", "true")
+                        await client.publish("ess/sensors/winter_mode", "ON" if is_winter else "OFF", retain=True)
+
+                    op_status = home.get("operation", {}).get("status")
+                    if op_status is not None:
+                        is_active = str(op_status).strip().lower() in ("start", "on", "1", "true")
+                        await client.publish("ess/sensors/active", "ON" if is_active else "OFF", retain=True)
+
+                    if loop_count % 12 == 1:
+                        batt_settings = await ess.get_batt_settings()
+                        if batt_settings and "alg_setting" in batt_settings:
+                            is_fc = str(batt_settings["alg_setting"]).strip().lower() in ("on", "1", "true")
+                            await client.publish("ess/sensors/fastcharge", "ON" if is_fc else "OFF", retain=True)
+                except Exception as sw_err:
+                    logger.debug(f"Switch state sync error: {sw_err}")
             if loop_count % 60 == 1:
                 logger.info(f"Poll cycle {loop_count} successful. ESS is healthy.")
 
