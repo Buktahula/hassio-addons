@@ -6,14 +6,17 @@ bashio::log.info "Starting LG ESS Home Assistant Add-on..."
 # Fix deprecated distutils in Python 3.12+ for pyess if present
 find /usr/local/lib -name "essmqtt.py" -exec sed -i "s/from distutils.util import strtobool/from setuptools._distutils.util import strtobool/" {} + 2>/dev/null || true
 
-# 1. Validate ESS Password
-if ! bashio::config.has_value 'ess_password'; then
-    bashio::log.fatal "Kein ESS-Passwort konfiguriert!"
-    bashio::log.fatal "Bitte trage das Passwort (in der Regel die MAC-Adresse deines LG ESS ohne Doppelpunkte in Kleinbuchstaben) in den Add-on-Einstellungen ein."
-    exit 1
+# 1. Determine ESS Password
+ESS_PASSWORD=""
+if bashio::config.has_value 'ess_password'; then
+    ESS_PASSWORD=$(bashio::config 'ess_password')
 fi
 
-ESS_PASSWORD=$(bashio::config 'ess_password')
+if [ -n "$ESS_PASSWORD" ]; then
+    bashio::log.info "Manuell konfiguriertes ESS-Passwort wird verwendet."
+else
+    bashio::log.info "Kein ESS-Passwort hinterlegt ➔ Automatische Erkennung via MAC-Adresse (Standard-Kennwort) aktiv."
+fi
 
 # 2. Determine MQTT Broker settings (Auto-discovery via Home Assistant MQTT service)
 MQTT_HOST=""
@@ -94,7 +97,9 @@ fi
 
 # 4. Prepare CLI Arguments
 ARGS=()
-ARGS+=("--ess_password" "${ESS_PASSWORD}")
+if [ -n "$ESS_PASSWORD" ]; then
+    ARGS+=("--ess_password" "${ESS_PASSWORD}")
+fi
 ARGS+=("--mqtt_server" "${MQTT_HOST}")
 ARGS+=("--mqtt_port" "${MQTT_PORT}")
 ARGS+=("--interval_seconds" "${INTERVAL}")

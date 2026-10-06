@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.11
+- **Vollautomatische Kennwort-Erkennung via MAC-Adresse (Zero-Configuration Authentication) (#16)**:
+  - Das Add-on ermittelt nun bei leer gelassenem `ess_password` die MAC-Adresse des LG ESS vollautomatisch über den lokalen ARP-Cache und mDNS/Netzwerk-Probing.
+  - Leitet das werkseitige Standard-Passwort (MAC-Adresse in Kleinbuchstaben ohne Doppelpunkte) automatisch ab und meldet sich damit am Wechselrichter an.
+  - Speichert das ermittelte Passwort nach erfolgreicher Anmeldung über die Home Assistant Supervisor API (`/addons/self/options`) direkt in die Add-on-Konfiguration, sodass das Feld in der Benutzeroberfläche für den Nutzer automatisch ausgefüllt wird.
+  - Nutzer, die das Standard-Passwort nicht geändert haben, müssen ab sofort **überhaupt kein Passwort mehr eingeben** – das Add-on funktioniert nach der Installation komplett "out-of-the-box" (Zero-Config).
+  - Falls das Standard-Passwort am Wechselrichter geändert wurde, kann wie gewohnt weiterhin ein eigenes Kennwort in `ess_password` hinterlegt werden. Bei ungültigen Standard-Passwörtern weist das Protokoll nun mit einer klaren Meldung darauf hin.
+
 ## 0.1.10
 - **Fix für Entity-ID Übernahme via MQTT Auto-Discovery (`default_entity_id`) (#15)**:
   - Behebt ein Problem bei neueren Home Assistant Versionen (ab Core 2026.4), in denen das bisherige MQTT-Discovery-Feld `object_id` entfernt wurde.

@@ -20,22 +20,18 @@ Copyright (c) 2019-2020 Paul Görgen (MIT License)
 Installiere und starte das offizielle **Mosquitto broker** Add-on in Home Assistant.
 > **Tipp:** Wenn der offizielle Mosquitto-Broker verwendet wird, verbindet sich dieses Add-on **vollautomatisch**! Du musst Server, Port und Zugangsdaten nicht manuell eingeben.
 
-### 2. LG ESS Gerätepasswort ermitteln
+### 2. LG ESS Gerätepasswort (Vollautomatisch!)
 
-#### Methode 1 (Empfohlen & am einfachsten):
-Im Router nach der MAC-Adresse des LG ESS Wechselrichters suchen. Das Gerätepasswort entspricht exakt der MAC-Adresse in **Kleinbuchstaben ohne Doppelpunkte**.  
+> **🎉 NEU (Zero-Config):** Du musst das Passwort in der Regel **überhaupt nicht mehr manuell eingeben**!  
+> Wenn `ess_password` leer gelassen wird, ermittelt das Add-on die MAC-Adresse deines LG ESS automatisch über das lokale Netzwerk, leitet das werkseitige Standard-Passwort (MAC-Adresse in Kleinbuchstaben ohne Doppelpunkte) ab und befüllt das Feld nach dem ersten Start vollautomatisch!
+
+#### Falls du das Passwort am Wechselrichter geändert hast:
+Falls du das Standard-Passwort geändert hast, trage dein eigenes Passwort bitte manuell in das Feld `ess_password` ein.
+
+#### So ist das Standard-Passwort aufgebaut:
+Das werkseitige Gerätepasswort entspricht exakt der MAC-Adresse der LAN-Schnittstelle in **Kleinbuchstaben ohne Doppelpunkte**.  
 *Beispiel:*  
-MAC-Adresse: `a3:4d:c2:03:0c:ef` ➔ Passwort: `a34dc2030cef`
-
-#### Methode 2 (Über das Direkt-WLAN des Wechselrichters):
-1. Verbinde dich mit dem internen WLAN-Hotspot des LG ESS.
-2. Installiere eine Python-App auf dem Smartphone (z. B. [Pydroid 3](https://play.google.com/store/apps/details?id=ru.iiec.pydroid3) auf Android oder Terminal auf PC/Laptop).
-3. Führe im Terminal folgende Befehle aus:
-   ```bash
-   pip install pyess
-   esscli --action get_password
-   ```
-4. Notiere das ausgegebene Passwort.
+MAC-Adresse: `a3:4d:c2:03:0c:ef` ➔ Standard-Passwort: `a34dc2030cef`
 
 ---
 
@@ -44,7 +40,7 @@ MAC-Adresse: `a3:4d:c2:03:0c:ef` ➔ Passwort: `a34dc2030cef`
 Beispielkonfiguration im Add-on-Reiter:
 
 ```yaml
-ess_password: "dein_ess_passwort"
+ess_password: "" # Optional: Leer lassen für automatische Erkennung via MAC-Adresse!
 ess_host: "" # Optional: Feste IP-Adresse (z. B. 192.168.1.150), falls Auto-Erkennung nicht greift
 interval_seconds: 5 # Abfrage-Intervall in Sekunden (Standard: 5)
 auto_create_sensors: true # Automatisch Home Assistant Sensoren via MQTT erstellen
@@ -58,7 +54,7 @@ mqtt_user: ""
 mqtt_password: ""
 ```
 
-* **`ess_password`** *(Pflicht)*: Das ermittelte Passwort des LG ESS.
+* **`ess_password`** *(Optional)*: Das Passwort des LG ESS. Wenn leer, ermittelt das Add-on die MAC-Adresse vollautomatisch und speichert das Standard-Kennwort nach erfolgreichem Login selbstständig in der Konfiguration ab. Nur erforderlich, wenn du das Standard-Passwort geändert hast.
 * **`ess_host`** *(Optional)*: Die IP-Adresse oder der Hostname des LG ESS. Wenn leer, wird der Wechselrichter automatisch per mDNS/Broadcast im lokalen Netzwerk gesucht.
 * **`interval_seconds`** *(Standard: 5)*: Aktualisierungsintervall in Sekunden.
 * **`auto_create_sensors`** *(Standard: true)*: Legt alle Sensoren und Schalter vollautomatisch als Home Assistant Entitäten unter einem einheitlichen „LG ESS“ Gerät an.

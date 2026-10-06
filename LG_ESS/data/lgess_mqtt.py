@@ -11,12 +11,16 @@ import asyncio
 import json
 import logging
 import os
+import re
+import socket
+import subprocess
 import sys
+import time
 import aiohttp
 import aiohttp.client_exceptions
 from aiomqtt import Client, MqttError
 
-from pyess.aio_ess import ESS
+from pyess.aio_ess import ESS, ESSAuthException
 from pyess.ess import autodetect_ess
 
 logging.basicConfig(
@@ -54,7 +58,7 @@ DEVICE_INFO = {
     "name": "LG ESS",
     "manufacturer": "LG Electronics",
     "model": "ESS Home",
-    "sw_version": "0.1.10",
+    "sw_version": "0.1.11",
 }
 
 # Sensor definitions with localized names, units, device classes, and extractors
@@ -827,6 +831,156 @@ async def run_diagnostics(entity_naming="legacy", lang="de", delay=4):
         logger.debug(f"Error during migration diagnostics: {ex}")
 
 
+def clean_mac(mac_str):
+    """Normalizes any MAC address representation to 12 lowercase hex characters."""
+    if not mac_str:
+        return None
+    clean = re.sub(r"[^0-9a-fA-F]", "", str(mac_str)).lower()
+    return clean if len(clean) == 12 else None
+
+
+def probe_ip(ip):
+    """Sends TCP/UDP probes to ip to ensure kernel triggers ARP resolution."""
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.settimeout(0.8)
+        s.connect_ex((ip, 443))
+        s.close()
+    except Exception:
+        pass
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect((ip, 80))
+        s.send(b"\x00")
+        s.close()
+    except Exception:
+        pass
+
+
+def get_mac_from_arp_file(ip):
+    """Reads /proc/net/arp and returns clean MAC address if found."""
+    try:
+        with open("/proc/net/arp", "r") as f:
+            for line in f:
+                parts = line.split()
+                if len(parts) >= 4 and parts[0] == ip:
+                    flags = parts[2]
+                    mac = parts[3].strip()
+                    if flags != "0x0" and mac != "00:00:00:00:00:00":
+                        cleaned = clean_mac(mac)
+                        if cleaned:
+                            return cleaned
+    except Exception as e:
+        logger.debug(f"Error reading /proc/net/arp: {e}")
+    return None
+
+
+def get_mac_from_system_command(ip):
+    """Tries 'ip neigh' or 'arp -n' via subprocess as fallback."""
+    try:
+        out = subprocess.check_output(["ip", "neigh", "show", ip], stderr=subprocess.DEVNULL, text=True)
+        m = re.search(r"lladdr\s+([0-9a-fA-F:]{17})", out)
+        if m:
+            cleaned = clean_mac(m.group(1))
+            if cleaned:
+                return cleaned
+    except Exception:
+        pass
+    try:
+        out = subprocess.check_output(["arp", "-n", ip], stderr=subprocess.DEVNULL, text=True)
+        m = re.search(r"([0-9a-fA-F]{2}[:-][0-9a-fA-F]{2}[:-][0-9a-fA-F]{2}[:-][0-9a-fA-F]{2}[:-][0-9a-fA-F]{2}[:-][0-9a-fA-F]{2})", out)
+        if m:
+            cleaned = clean_mac(m.group(1))
+            if cleaned:
+                return cleaned
+    except Exception:
+        pass
+    return None
+
+
+def detect_ess_password(ip, name=None):
+    """
+    Attempts to discover the default ESS password (MAC address lowercase without colons).
+    1. Checks if zeroconf name contains 12-char hex MAC.
+    2. Probes the device IP on the network and reads kernel ARP cache (/proc/net/arp).
+    3. Tries direct read endpoint in case device is in Wi-Fi hotspot mode.
+    """
+    logger.info(f"Suche MAC-Adresse für LG ESS ({ip})...")
+
+    # 1. Check if name already contains a 12-character hex MAC
+    if name:
+        cleaned_name = clean_mac(name)
+        if cleaned_name:
+            logger.info(f"MAC-Adresse direkt aus Gerätenamen ({name}) ermittelt.")
+            return cleaned_name
+
+    # 2. Check ARP cache with probes (up to 6 attempts)
+    for _ in range(6):
+        probe_ip(ip)
+        mac = get_mac_from_arp_file(ip)
+        if mac:
+            return mac
+        mac_cmd = get_mac_from_system_command(ip)
+        if mac_cmd:
+            return mac_cmd
+        time.sleep(0.4)
+
+    # 3. Direct local endpoint read (Wi-Fi hotspot mode 192.168.23.1 or supported firmware)
+    try:
+        import urllib.request
+        import ssl
+        ctx = ssl.create_default_context()
+        ctx.check_hostname = False
+        ctx.verify_mode = ssl.CERT_NONE
+        req = urllib.request.Request(
+            f"https://{ip}/v1/user/setting/read/password",
+            data=b'{"key":"lgepmsuser!@#"}',
+            headers={"Content-Type": "application/json", "Charset": "UTF-8"},
+            method="POST",
+        )
+        with urllib.request.urlopen(req, timeout=1.5, context=ctx) as resp:
+            data = json.loads(resp.read().decode())
+            if data.get("status") == "success" and data.get("password"):
+                pw = clean_mac(data["password"]) or data["password"].strip().lower()
+                logger.info("Passwort erfolgreich über lokalen Einstellungs-Endpunkt ausgelesen.")
+                return pw
+    except Exception:
+        pass
+
+    return None
+
+
+async def save_password_to_supervisor(password):
+    """
+    Saves the automatically discovered password back into Home Assistant
+    Add-on options via the Supervisor API so the user sees it in the UI.
+    """
+    token = os.environ.get("SUPERVISOR_TOKEN") or os.environ.get("HASSIO_TOKEN")
+    if not token:
+        logger.debug("SUPERVISOR_TOKEN nicht verfügbar; Passwort wird nur im Speicher gehalten.")
+        return False
+
+    url = "http://supervisor/addons/self/options"
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "Content-Type": "application/json",
+    }
+    payload = {"options": {"ess_password": password}}
+    try:
+        timeout = aiohttp.ClientTimeout(total=5)
+        async with aiohttp.ClientSession(timeout=timeout) as session:
+            async with session.post(url, headers=headers, json=payload) as resp:
+                if resp.status == 200:
+                    logger.info("🔑 Standard-Passwort wurde automatisch in die Home Assistant Add-on-Konfiguration übernommen!")
+                    return True
+                else:
+                    text = await resp.text()
+                    logger.debug(f"Supervisor options response ({resp.status}): {text}")
+    except Exception as ex:
+        logger.debug(f"Konnte Passwort nicht in Supervisor-Optionen speichern: {ex}")
+    return False
+
+
 async def handle_control(client, ess):
     """Listens for switch commands on ess/control/# and interacts with LG ESS."""
     try:
@@ -937,7 +1091,7 @@ async def poll_loop(ess, client, interval_seconds=5, auto_create=True, lang="de"
 
 async def main():
     parser = argparse.ArgumentParser(description="LG ESS MQTT Bridge with HA Auto-Discovery")
-    parser.add_argument("--ess_password", required=True, help="LG ESS password")
+    parser.add_argument("--ess_password", default=None, help="LG ESS password (optional, auto-detected from MAC if omitted)")
     parser.add_argument("--ess_host", default=None, help="LG ESS IP or hostname")
     parser.add_argument("--mqtt_server", required=True, help="MQTT Broker host")
     parser.add_argument("--mqtt_port", default=1883, type=int, help="MQTT Broker port")
@@ -969,8 +1123,35 @@ async def main():
         ip, name = await loop.run_in_executor(None, autodetect_ess)
         logger.info(f"Discovered LG ESS at {ip} ({name})")
 
+    # Determine Password (manual or automatic MAC discovery)
+    password = args.ess_password
+    auto_detected_pw = False
+
+    if not password:
+        logger.info("Kein ESS-Passwort konfiguriert. Starte automatische Ermittlung via MAC-Adresse (Standard-Kennwort)...")
+        password = await loop.run_in_executor(None, lambda: detect_ess_password(ip, name))
+        if not password:
+            logger.error("❌ Die MAC-Adresse des LG ESS konnte nicht automatisch im Netzwerk ermittelt werden.")
+            logger.error("👉 Bitte trage das Passwort (deine MAC-Adresse in Kleinbuchstaben ohne Doppelpunkte) manuell in den Add-on-Einstellungen unter 'ess_password' ein.")
+            sys.exit(1)
+        auto_detected_pw = True
+        formatted_mac = ":".join(password[i:i+2] for i in range(0, 12, 2))
+        logger.info(f"🔑 MAC-Adresse gefunden: {formatted_mac} ➔ Standard-Passwort: {password[:2]}****{password[-2:]}")
+
     logger.info(f"Connecting to LG ESS at {ip}...")
-    ess = await ESS.create(name, args.ess_password, ip)
+    try:
+        ess = await ESS.create(name, password, ip)
+    except ESSAuthException:
+        if auto_detected_pw:
+            logger.error("❌ Das automatische Standard-Passwort (MAC-Adresse) wurde vom LG ESS abgelehnt!")
+            logger.error("👉 Falls du das Gerätepasswort deines LG ESS geändert hast, trage dein eigenes Passwort bitte in den Add-on-Einstellungen unter 'ess_password' ein.")
+        else:
+            logger.error("❌ Das angegebene ESS-Passwort ist ungültig!")
+        sys.exit(1)
+
+    if auto_detected_pw:
+        logger.info("✅ Erfolgreich mit dem Standard-Passwort (MAC-Adresse) am LG ESS angemeldet!")
+        asyncio.create_task(save_password_to_supervisor(password))
 
     while True:
         try:
