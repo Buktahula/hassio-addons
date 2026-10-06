@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.10
+- **Fix für Entity-ID Übernahme via MQTT Auto-Discovery (`default_entity_id`) (#15)**:
+  - Behebt ein Problem bei neueren Home Assistant Versionen (ab Core 2026.4), in denen das bisherige MQTT-Discovery-Feld `object_id` entfernt wurde.
+  - Das Add-on übermittelt nun standardkonform `default_entity_id: "sensor.<obj_id>"` (bzw. `default_entity_id: "switch.<obj_id>"`).
+  - Dadurch generiert Home Assistant bei `entity_naming: legacy` wieder exakt die erwarteten Legacy-IDs (`sensor.actual_grid_buy`, `sensor.battery_load_percent`, `sensor.energy_generation_today`, etc.) anstatt automatisch den Gerätenamen voranzustellen (`sensor.lg_ess_aktueller_netzbezug`).
+  - **Erweiterte Migrations-Diagnose**: Erkennt automatisch beim Start, wenn Home Assistant noch Entitäten mit `sensor.lg_ess_*` aus Vorversionen gespeichert hat, und gibt eine 1-Klick-Anleitung zur sauberen Neugenerierung aus (durch einmaliges Löschen des MQTT-Geräts „LG ESS“ in Home Assistant).
+
 ## 0.1.9
 - **Fix für Wintermodus-Schalter (#14)**:
   - Behebt die invertierte Steuerung des Wintermodus (`winter_mode`): Das Einschalten des Schalters in Home Assistant schaltet nun wie vorgesehen den Wintermodus am LG ESS ein (`winter_on`), das Ausschalten schaltet ihn aus (`winter_off`). Bisher war die Logik vertauscht, wodurch die Schalterstellung in Home Assistant und in der LG EnerVU App gegensätzlich war.

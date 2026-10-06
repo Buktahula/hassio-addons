@@ -54,7 +54,7 @@ DEVICE_INFO = {
     "name": "LG ESS",
     "manufacturer": "LG Electronics",
     "model": "ESS Home",
-    "sw_version": "0.1.9",
+    "sw_version": "0.1.10",
 }
 
 # Sensor definitions with localized names, units, device classes, and extractors
@@ -476,6 +476,7 @@ async def publish_discovery(mqtt_client, lang="de", power_unit="kW", entity_nami
         payload = {
             "name": name,
             "unique_id": f"lgess_mqtt_{s_id}",
+            "default_entity_id": f"sensor.{obj_id}",
             "object_id": obj_id,
             "state_topic": f"ess/sensors/{s_id}",
             "device": DEVICE_INFO,
@@ -500,6 +501,7 @@ async def publish_discovery(mqtt_client, lang="de", power_unit="kW", entity_nami
         payload = {
             "name": name,
             "unique_id": sw["unique_id"],
+            "default_entity_id": f"switch.{obj_id}",
             "object_id": obj_id,
             "command_topic": sw["command_topic"],
             "state_topic": sw["state_topic"],
@@ -682,11 +684,76 @@ async def run_diagnostics(entity_naming="legacy", lang="de", delay=4):
                     "old_state": old_val,
                 })
 
-        if not conflicts:
+        # Check if legacy naming was requested, but HA still holds prefixed entity IDs (e.g. sensor.lg_ess_*) from earlier versions
+        prefixed_conflicts = []
+        if entity_naming == "legacy":
+            for s in SENSOR_DEFINITIONS:
+                s_id = s["id"]
+                obj_id = LEGACY_OBJECT_IDS.get(s_id, s_id)
+                target_eid = f"sensor.{obj_id}"
+                if target_eid not in ha_states:
+                    for eid in ha_states:
+                        if eid.startswith("sensor.lg_ess_") and (s_id in eid or obj_id in eid or s.get("object_ids", {}).get("de", "") in eid):
+                            prefixed_conflicts.append((target_eid, eid))
+                            break
+
+        if prefixed_conflicts:
+            sample_t, sample_p = prefixed_conflicts[0]
+            if lang == "de":
+                prefix_lines = [
+                    "",
+                    "================================================================================",
+                    "⚠️  MIGRATIONS-HINWEIS: VORHERIGE ENTITÄTEN MIT 'lg_ess_' PRÄFIX GEFUNDEN! ⚠️",
+                    "================================================================================",
+                    f"Home Assistant hat für {len(prefixed_conflicts)} Sensoren noch alte Entitäts-IDs",
+                    "mit 'sensor.lg_ess_*' aus einer früheren Add-on-Version gespeichert:",
+                ]
+                for t_eid, p_eid in prefixed_conflicts:
+                    prefix_lines.append(f"  • {p_eid} ➔ sollte sein: {t_eid}")
+                prefix_lines.extend([
+                    "",
+                    "SO STELLST DU ALLE ENTITÄTEN MIT EINEM KLICK AUF DIE LEGACY-IDS UM:",
+                    "  1. Öffne in Home Assistant: Einstellungen ➔ Geräte & Dienste ➔ MQTT",
+                    "  2. Klicke auf 'Geräte' und wähle das Gerät 'LG ESS' aus.",
+                    "  3. Klicke oben rechts auf das Drei-Punkte-Menü (...) und wähle 'Löschen'.",
+                    f"  4. Das Add-on legt die Entitäten sofort vollautomatisch mit den korrekten",
+                    f"     Legacy-IDs (z. B. '{sample_t}') neu an!",
+                    "================================================================================",
+                    "",
+                ])
+            else:
+                prefix_lines = [
+                    "",
+                    "================================================================================",
+                    "⚠️  MIGRATION NOTE: PREVIOUS ENTITIES WITH 'lg_ess_' PREFIX FOUND! ⚠️",
+                    "================================================================================",
+                    f"Home Assistant is still retaining 'sensor.lg_ess_*' entity IDs for {len(prefixed_conflicts)} sensors",
+                    "from an earlier add-on version:",
+                ]
+                for t_eid, p_eid in prefixed_conflicts:
+                    prefix_lines.append(f"  • {p_eid} ➔ should be: {t_eid}")
+                prefix_lines.extend([
+                    "",
+                    "HOW TO RESET ALL ENTITIES TO LEGACY IDS WITH A SINGLE CLICK:",
+                    "  1. In Home Assistant, navigate to: Settings ➔ Devices & Services ➔ MQTT",
+                    "  2. Click 'Devices' and select 'LG ESS'.",
+                    "  3. Click the three dots menu (...) in the top right and select 'Delete'.",
+                    f"  4. The add-on will immediately recreate all entities cleanly with the exact",
+                    f"     legacy IDs (e.g. '{sample_t}')!",
+                    "================================================================================",
+                    "",
+                ])
+            for line in prefix_lines:
+                logger.warning(line)
+
+        if not conflicts and not prefixed_conflicts:
             if lang == "de":
                 logger.info("✅ Migrations-Diagnose: Alle Sensoren und Schalter sind sauber zugeordnet. Keine blockierenden Alt-Entitäten gefunden!")
             else:
                 logger.info("✅ Migration Diagnostics: All sensors and switches are mapped cleanly. No orphaned YAML entities found!")
+            return
+
+        if not conflicts:
             return
 
         sample_target = conflicts[0]["target"]
