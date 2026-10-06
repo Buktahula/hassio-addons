@@ -90,6 +90,21 @@ Alle Sensoren und Schalter werden automatisch über MQTT Discovery angelegt und 
 
 ---
 
+## 🎴 Passende Lovelace Card: LG ESS Solar Card
+
+Für eine hübsche und animierte Visualisierung deines LG ESS im Home Assistant Dashboard gibt es die maßgeschneiderte **[LG ESS Solar Card](https://github.com/buktahula/lg-ess-card)**:
+
+* ⚡ **Live-Energiefluss** mit animierten Strompfaden (Solar ➔ Batterie / Haus / Netz)
+* 🔋 **Batterie-Füllstandsanzeige** in Echtzeit mit SoC-Prozent und Lade-/Entladeleistung
+* ☀️ **Aufklappbare String-Details** für String 1, 2 und 3 (Leistung & Spannung)
+* 📊 **Autarkiegrad- & Eigenverbrauchs-Gauges**
+* ❄️ **Integrierte Schalter** für Wintermodus und Schnellladung
+* 🪄 **Zero-Config**: Erkennt automatisch alle Entitäten dieses Add-ons (`type: custom:lg-ess-card`)
+
+👉 **Zum Card-Repository:** [https://github.com/buktahula/lg-ess-card](https://github.com/buktahula/lg-ess-card)
+
+---
+
 ## 🔄 Migration von bestehenden `sensor.yaml` Template-Sensoren
 
 Wenn du bisher die manuelle `sensor.yaml` verwendet hast, kannst du **ohne Verlust historischer Messdaten oder Energie-Dashboard-Verläufe** auf die automatischen Sensoren umsteigen!
