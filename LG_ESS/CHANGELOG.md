@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.13
+- **Entfernung des redundanten Schnelllade-Schalters (`switch.fastcharge`)**:
+  - Da mit Version 0.1.12 die offizielle 3-Wege-Auswahl `select.charging_mode` (*Batteriepflege*, *Schnellladung*, *Wettervorhersage*) eingeführt wurde, war der binäre Schalter `switch.fastcharge` redundant und konnte den 3-Zustands-Modus nicht vollständig abbilden (z. B. versehentliches Überschreiben von *Wettervorhersage* beim Ausschalten).
+  - Der Schalter `switch.fastcharge` wird nicht mehr über MQTT Discovery registriert und veraltete Discovery-Nachrichten werden beim Start automatisch bereinigt.
+  - Das MQTT-Steuerthema `ess/control/fastcharge` und das Statusthema `ess/sensors/fastcharge` bleiben für bestehende Hintergrundskripte oder Automationen weiterhin abwärtskompatibel erhalten.
+
 ## 0.1.12
 - **Lademodus-Auswahl (Select-Entität) & Fix für Schnellladung (#16)**:
   - **Neues Dropdown/Select `select.charging_mode` (Lademodus)**:

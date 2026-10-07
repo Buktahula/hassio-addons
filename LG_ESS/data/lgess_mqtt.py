@@ -377,14 +377,6 @@ SWITCH_DEFINITIONS = [
         "state_topic": "ess/sensors/winter_mode",
     },
     {
-        "id": "fastcharge",
-        "unique_id": "lgess_switch_fastcharge",
-        "name": {"de": "Schnellladung", "en": "Fast Charge"},
-        "icon": "mdi:battery-charging-wireless-alert",
-        "command_topic": "ess/control/fastcharge",
-        "state_topic": "ess/sensors/fastcharge",
-    },
-    {
         "id": "backup_mode",
         "unique_id": "lgess_switch_backup_mode",
         "name": {"de": "Backup-Modus", "en": "Backup Mode"},
@@ -663,6 +655,13 @@ async def publish_discovery(mqtt_client, lang="de", power_unit="kW", entity_nami
         }
         discovery_topic = f"homeassistant/number/lg_ess/{num_id}/config"
         await mqtt_client.publish(discovery_topic, json.dumps(payload), retain=True, qos=1)
+
+    # 5. Clean up deprecated discovery topics (e.g. legacy switch.fastcharge replaced by select.charging_mode)
+    deprecated_discovery_topics = [
+        "homeassistant/switch/lg_ess/fastcharge/config",
+    ]
+    for dep_topic in deprecated_discovery_topics:
+        await mqtt_client.publish(dep_topic, "", retain=True, qos=1)
 
     logger.info(
         f"Successfully published {len(SENSOR_DEFINITIONS)} sensors, {len(SWITCH_DEFINITIONS)} switches, "
