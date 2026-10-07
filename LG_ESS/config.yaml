@@ -1,5 +1,5 @@
 ---
-version: "0.1.11"
+version: "0.1.12"
 slug: lg_ess
 name: "LG ESS"
 image: "buktahula/lgess-{arch}"

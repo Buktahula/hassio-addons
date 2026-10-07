@@ -84,6 +84,18 @@ Alle Sensoren und Schalter werden automatisch über MQTT Discovery angelegt und 
 | **Batteriesysteme ➔ In Batterie geladen** | `sensor.energy_batt_charge_today` | `sensor.tages_batterieladung` |
 | **Batteriesysteme ➔ Aus Batterie entnommen** | `sensor.energy_batt_discharge_today` | `sensor.tages_batterieentladung` |
 
+### Steuerungs-Entitäten (Schalter, Auswahl & Einstellungen):
+
+| Entität | Typ | Beschreibung |
+| :--- | :--- | :--- |
+| **`select.charging_mode`** | Auswahl (Dropdown) | **Lademodus**: Auswahl zwischen *Batteriepflege* (0), *Schnellladung* (1) und *Wettervorhersage* (2). |
+| **`switch.fastcharge`** | Schalter | **Schnellladung**: Schaltet direkt zwischen Schnellladung (AN) und Batteriepflege (AUS) um. |
+| **`switch.winter_mode`** | Schalter | **Wintermodus**: Aktiviert bzw. deaktiviert den saisonalen Schutzmodus. |
+| **`switch.backup_mode`** | Schalter | **Backup-Modus**: Schaltet die Notstromreserve der Batterie ein bzw. aus. |
+| **`switch.charge_from_grid`** | Schalter | **Aufladen vom Netz**: Erlaubt aktives Laden des Speichers aus dem Stromnetz (z. B. bei dynamischen Tarifen). |
+| **`number.backup_soc`** | Zahl (Slider/Box) | **Backup Mindest-SoC**: Mindest-Batterieladestand für den Notstrombetrieb (5% – 100%). |
+| **`switch.active`** | Schalter | **ESS Aktiv**: Gesamtbetrieb des LG ESS (Start / Stop). |
+
 ---
 
 ## 🎴 Passende Lovelace Card: LG ESS Solar Card

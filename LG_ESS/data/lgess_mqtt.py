@@ -385,6 +385,22 @@ SWITCH_DEFINITIONS = [
         "state_topic": "ess/sensors/fastcharge",
     },
     {
+        "id": "backup_mode",
+        "unique_id": "lgess_switch_backup_mode",
+        "name": {"de": "Backup-Modus", "en": "Backup Mode"},
+        "icon": "mdi:shield-battery",
+        "command_topic": "ess/control/backup_mode",
+        "state_topic": "ess/sensors/backup_mode",
+    },
+    {
+        "id": "charge_from_grid",
+        "unique_id": "lgess_switch_charge_from_grid",
+        "name": {"de": "Aufladen vom Netz", "en": "Charge from Grid"},
+        "icon": "mdi:transmission-tower-export",
+        "command_topic": "ess/control/charge_from_grid",
+        "state_topic": "ess/sensors/charge_from_grid",
+    },
+    {
         "id": "active",
         "unique_id": "lgess_switch_active",
         "name": {"de": "ESS Aktiv", "en": "ESS Active"},
@@ -393,6 +409,87 @@ SWITCH_DEFINITIONS = [
         "state_topic": "ess/sensors/active",
     },
 ]
+
+SELECT_DEFINITIONS = [
+    {
+        "id": "charging_mode",
+        "unique_id": "lgess_select_charging_mode",
+        "name": {"de": "Lademodus", "en": "Charging Mode"},
+        "icon": "mdi:battery-charging",
+        "command_topic": "ess/control/charging_mode",
+        "state_topic": "ess/sensors/charging_mode",
+        "options": {
+            "de": ["Batteriepflege", "Schnellladung", "Wettervorhersage"],
+            "en": ["Battery Care", "Fast Charge", "Weather Forecast"],
+        },
+    },
+]
+
+NUMBER_DEFINITIONS = [
+    {
+        "id": "backup_soc",
+        "unique_id": "lgess_number_backup_soc",
+        "name": {"de": "Backup Mindest-SoC", "en": "Backup Min SoC"},
+        "icon": "mdi:battery-heart-variant",
+        "unit": "%",
+        "min": 5,
+        "max": 100,
+        "step": 5,
+        "command_topic": "ess/control/backup_soc",
+        "state_topic": "ess/sensors/backup_soc",
+    },
+]
+
+CHARGING_MODE_LABELS = {
+    0: {"de": "Batteriepflege", "en": "Battery Care", "key": "battery_care"},
+    1: {"de": "Schnellladung", "en": "Fast Charge", "key": "fast_charge"},
+    2: {"de": "Wettervorhersage", "en": "Weather Forecast", "key": "weather_forecast"},
+}
+
+STRING_TO_CHARGING_MODE = {
+    # 0 -> Battery Care / Batteriepflege
+    "0": 0,
+    "battery_care": 0,
+    "batteriepflege": 0,
+    "battery care": 0,
+    "care": 0,
+    "eco": 0,
+    # 1 -> Fast Charge / Schnellladung
+    "1": 1,
+    "fast_charge": 1,
+    "fastcharge": 1,
+    "schnellladung": 1,
+    "schnellladen": 1,
+    "fast charge": 1,
+    "fast": 1,
+    # 2 -> Weather Forecast / Wettervorhersage
+    "2": 2,
+    "weather_forecast": 2,
+    "weatherforecast": 2,
+    "wettervorhersage": 2,
+    "weather forecast": 2,
+    "weather": 2,
+}
+
+
+def parse_charging_mode(val):
+    """Parses any charging mode representation (int, string key, localized name) to integer 0, 1, or 2."""
+    if val is None:
+        return None
+    val_clean = str(val).strip().lower()
+    return STRING_TO_CHARGING_MODE.get(val_clean, None)
+
+
+def get_charging_mode_label(mode_int, lang="de"):
+    """Returns the localized display string for a charging mode integer."""
+    info = CHARGING_MODE_LABELS.get(mode_int, CHARGING_MODE_LABELS[0])
+    return info.get(lang, info["de"])
+
+
+def get_charging_mode_key(mode_int):
+    """Returns the raw ASCII identifier for a charging mode integer."""
+    info = CHARGING_MODE_LABELS.get(mode_int, CHARGING_MODE_LABELS[0])
+    return info["key"]
 
 
 # Legacy 2023 sensor.yaml mapping (exact friendly names and object_ids)
@@ -421,6 +518,10 @@ LEGACY_NAMES = {
     "grid_freq": "Netzfrequenz",
     "battery_status": "Batteriestatus",
     "operation_mode": "Betriebsmodus",
+    "charging_mode": "Lademodus",
+    "backup_mode": "Backup-Modus",
+    "charge_from_grid": "Aufladen vom Netz",
+    "backup_soc": "Backup Mindest-SoC",
 }
 
 LEGACY_OBJECT_IDS = {
@@ -448,6 +549,10 @@ LEGACY_OBJECT_IDS = {
     "grid_freq": "grid_freq",
     "battery_status": "battery_status",
     "operation_mode": "operation_mode",
+    "charging_mode": "charging_mode",
+    "backup_mode": "backup_mode",
+    "charge_from_grid": "charge_from_grid",
+    "backup_soc": "backup_soc",
 }
 
 
@@ -517,7 +622,52 @@ async def publish_discovery(mqtt_client, lang="de", power_unit="kW", entity_nami
         discovery_topic = f"homeassistant/switch/lg_ess/{sw_id}/config"
         await mqtt_client.publish(discovery_topic, json.dumps(payload), retain=True, qos=1)
 
-    logger.info(f"Successfully published {len(SENSOR_DEFINITIONS)} sensors and {len(SWITCH_DEFINITIONS)} switches to MQTT Discovery.")
+    # 3. Selects
+    for sel in SELECT_DEFINITIONS:
+        sel_id = sel["id"]
+        name = sel["name"].get(lang, sel["name"]["de"])
+        obj_id = sel_id if entity_naming == "legacy" else sel["unique_id"]
+        options = sel["options"].get(lang, sel["options"]["de"])
+        payload = {
+            "name": name,
+            "unique_id": sel["unique_id"],
+            "default_entity_id": f"select.{obj_id}",
+            "object_id": obj_id,
+            "command_topic": sel["command_topic"],
+            "state_topic": sel["state_topic"],
+            "options": options,
+            "device": DEVICE_INFO,
+            "icon": sel["icon"],
+        }
+        discovery_topic = f"homeassistant/select/lg_ess/{sel_id}/config"
+        await mqtt_client.publish(discovery_topic, json.dumps(payload), retain=True, qos=1)
+
+    # 4. Numbers
+    for num in NUMBER_DEFINITIONS:
+        num_id = num["id"]
+        name = num["name"].get(lang, num["name"]["de"])
+        obj_id = num_id if entity_naming == "legacy" else num["unique_id"]
+        payload = {
+            "name": name,
+            "unique_id": num["unique_id"],
+            "default_entity_id": f"number.{obj_id}",
+            "object_id": obj_id,
+            "command_topic": num["command_topic"],
+            "state_topic": num["state_topic"],
+            "min": num["min"],
+            "max": num["max"],
+            "step": num["step"],
+            "unit_of_measurement": num["unit"],
+            "device": DEVICE_INFO,
+            "icon": num["icon"],
+        }
+        discovery_topic = f"homeassistant/number/lg_ess/{num_id}/config"
+        await mqtt_client.publish(discovery_topic, json.dumps(payload), retain=True, qos=1)
+
+    logger.info(
+        f"Successfully published {len(SENSOR_DEFINITIONS)} sensors, {len(SWITCH_DEFINITIONS)} switches, "
+        f"{len(SELECT_DEFINITIONS)} selects, and {len(NUMBER_DEFINITIONS)} numbers to MQTT Discovery."
+    )
 
 
 DEFAULT_LEGACY_RAW_SENSORS = (
@@ -670,23 +820,28 @@ async def run_diagnostics(entity_naming="legacy", lang="de", delay=4):
                     "old_state": old_val,
                 })
 
-        # Check switches
-        for sw in SWITCH_DEFINITIONS:
-            sw_id = sw["id"]
-            obj_id = sw_id if entity_naming == "legacy" else sw["unique_id"]
-            target_eid = f"switch.{obj_id}"
-            dup_eids = [
-                eid for eid in ha_states
-                if eid.startswith(f"{target_eid}_") and eid[len(target_eid) + 1:].isdigit()
-            ]
-            if dup_eids:
-                old_state = ha_states.get(target_eid, {})
-                old_val = old_state.get("state", "nicht gefunden / not found")
-                conflicts.append({
-                    "target": target_eid,
-                    "duplicates": dup_eids,
-                    "old_state": old_val,
-                })
+        # Check switches, selects, and numbers
+        for item_list, domain in [
+            (SWITCH_DEFINITIONS, "switch"),
+            (SELECT_DEFINITIONS, "select"),
+            (NUMBER_DEFINITIONS, "number"),
+        ]:
+            for item in item_list:
+                item_id = item["id"]
+                obj_id = item_id if entity_naming == "legacy" else item["unique_id"]
+                target_eid = f"{domain}.{obj_id}"
+                dup_eids = [
+                    eid for eid in ha_states
+                    if eid.startswith(f"{target_eid}_") and eid[len(target_eid) + 1:].isdigit()
+                ]
+                if dup_eids:
+                    old_state = ha_states.get(target_eid, {})
+                    old_val = old_state.get("state", "nicht gefunden / not found")
+                    conflicts.append({
+                        "target": target_eid,
+                        "duplicates": dup_eids,
+                        "old_state": old_val,
+                    })
 
         # Check if legacy naming was requested, but HA still holds prefixed entity IDs (e.g. sensor.lg_ess_*) from earlier versions
         prefixed_conflicts = []
@@ -981,8 +1136,8 @@ async def save_password_to_supervisor(password):
     return False
 
 
-async def handle_control(client, ess):
-    """Listens for switch commands on ess/control/# and interacts with LG ESS."""
+async def handle_control(client, ess, lang="de"):
+    """Listens for control commands on ess/control/# and interacts with LG ESS."""
     try:
         await client.subscribe("ess/control/#")
         await client.subscribe("/ess/control/#")
@@ -992,29 +1147,68 @@ async def handle_control(client, ess):
                 topic = str(msg.topic)
                 try:
                     payload_raw = msg.payload.decode().strip()
-                    state = str_to_bool(payload_raw)
-                    logger.info(f"Control command received on {topic}: {payload_raw} (parsed={state})")
+                    logger.info(f"Control command received on {topic}: {payload_raw}")
 
                     if "winter_mode" in topic:
-                        if state:
-                            await ess.winter_on()
-                        else:
-                            await ess.winter_off()
+                        state = str_to_bool(payload_raw)
+                        await ess.set_batt_settings({"wintermode": "on" if state else "off"})
                         await client.publish("ess/sensors/winter_mode", "ON" if state else "OFF", retain=True)
+                        logger.info(f"Winter mode set to {'ON' if state else 'OFF'}")
+
+                    elif "backup_mode" in topic:
+                        state = str_to_bool(payload_raw)
+                        await ess.set_batt_settings({"backupmode": "on" if state else "off"})
+                        await client.publish("ess/sensors/backup_mode", "ON" if state else "OFF", retain=True)
+                        logger.info(f"Backup mode set to {'ON' if state else 'OFF'}")
+
+                    elif "charge_from_grid" in topic:
+                        state = str_to_bool(payload_raw)
+                        await ess.set_batt_settings({"autocharge": "1" if state else "0"})
+                        await client.publish("ess/sensors/charge_from_grid", "ON" if state else "OFF", retain=True)
+                        logger.info(f"Charge from grid (auto_charge) set to {'ON' if state else 'OFF'}")
+
+                    elif "backup_soc" in topic:
+                        try:
+                            soc_val = int(round(float(payload_raw)))
+                            soc_val = max(5, min(100, soc_val))
+                            await ess.set_batt_settings({"backup_soc": str(soc_val)})
+                            await client.publish("ess/sensors/backup_soc", str(soc_val), retain=True)
+                            logger.info(f"Backup SOC set to {soc_val}%")
+                        except ValueError as ex:
+                            logger.warning(f"Invalid backup_soc value received: {payload_raw}: {ex}")
+
+                    elif "charging_mode" in topic:
+                        mode_int = parse_charging_mode(payload_raw)
+                        if mode_int is not None:
+                            await ess.set_batt_settings({"alg_setting": mode_int})
+                            label = get_charging_mode_label(mode_int, lang)
+                            raw_key = get_charging_mode_key(mode_int)
+                            await client.publish("ess/sensors/charging_mode", label, retain=True)
+                            await client.publish("ess/sensors/charging_mode_raw", raw_key, retain=True)
+                            await client.publish("ess/sensors/fastcharge", "ON" if mode_int == 1 else "OFF", retain=True)
+                            logger.info(f"Charging mode updated to '{label}' (alg_setting={mode_int})")
+                        else:
+                            logger.warning(f"Unknown charging mode option received on {topic}: '{payload_raw}'")
 
                     elif "fastcharge" in topic:
-                        if state:
-                            await ess.fastcharge_on()
-                        else:
-                            await ess.fastcharge_off()
+                        state = str_to_bool(payload_raw)
+                        target_mode = 1 if state else 0
+                        await ess.set_batt_settings({"alg_setting": target_mode})
+                        label = get_charging_mode_label(target_mode, lang)
+                        raw_key = get_charging_mode_key(target_mode)
                         await client.publish("ess/sensors/fastcharge", "ON" if state else "OFF", retain=True)
+                        await client.publish("ess/sensors/charging_mode", label, retain=True)
+                        await client.publish("ess/sensors/charging_mode_raw", raw_key, retain=True)
+                        logger.info(f"Fast charge switched to {'ON' if state else 'OFF'} -> mode '{label}'")
 
                     elif "active" in topic:
+                        state = str_to_bool(payload_raw)
                         if state:
                             await ess.switch_on()
                         else:
                             await ess.switch_off()
                         await client.publish("ess/sensors/active", "ON" if state else "OFF", retain=True)
+                        logger.info(f"ESS active state switched to {'ON' if state else 'OFF'}")
 
                 except Exception as ex:
                     logger.warning(f"Error handling control message on {topic}: {ex}")
@@ -1055,7 +1249,7 @@ async def poll_loop(ess, client, interval_seconds=5, auto_create=True, lang="de"
                     except Exception as calc_err:
                         logger.debug(f"Calculation error for {s['id']}: {calc_err}")
 
-                # 4. Synchronize switch states with LG ESS live telemetry
+                # 4. Synchronize switch / select / number states with LG ESS live telemetry
                 try:
                     batt_info = common.get("BATT", {})
                     winter_val = batt_info.get("winter_setting")
@@ -1070,13 +1264,38 @@ async def poll_loop(ess, client, interval_seconds=5, auto_create=True, lang="de"
                         is_active = str(op_status).strip().lower() in ("start", "on", "1", "true")
                         await client.publish("ess/sensors/active", "ON" if is_active else "OFF", retain=True)
 
-                    if loop_count % 12 == 1:
+                    if loop_count % 6 == 1:
                         batt_settings = await ess.get_batt_settings()
-                        if batt_settings and "alg_setting" in batt_settings:
-                            is_fc = str(batt_settings["alg_setting"]).strip().lower() in ("on", "1", "true")
-                            await client.publish("ess/sensors/fastcharge", "ON" if is_fc else "OFF", retain=True)
+                        if batt_settings:
+                            # 4.1 Charging mode & fastcharge
+                            if "alg_setting" in batt_settings:
+                                raw_alg = batt_settings["alg_setting"]
+                                mode_int = parse_charging_mode(raw_alg)
+                                if mode_int is not None:
+                                    label = get_charging_mode_label(mode_int, lang)
+                                    raw_key = get_charging_mode_key(mode_int)
+                                    await client.publish("ess/sensors/charging_mode", label, retain=True)
+                                    await client.publish("ess/sensors/charging_mode_raw", raw_key, retain=True)
+                                    await client.publish("ess/sensors/fastcharge", "ON" if mode_int == 1 else "OFF", retain=True)
+
+                            # 4.2 Backup mode
+                            bk_val = batt_settings.get("backup_setting") or batt_settings.get("backup_status")
+                            if bk_val is not None:
+                                is_backup = str(bk_val).strip().lower() in ("on", "1", "true")
+                                await client.publish("ess/sensors/backup_mode", "ON" if is_backup else "OFF", retain=True)
+
+                            # 4.3 Charge from grid / Auto charge
+                            ac_val = batt_settings.get("auto_charge")
+                            if ac_val is not None:
+                                is_ac = str(ac_val).strip().lower() in ("on", "1", "true")
+                                await client.publish("ess/sensors/charge_from_grid", "ON" if is_ac else "OFF", retain=True)
+
+                            # 4.4 Backup SOC
+                            soc_val = batt_settings.get("backup_soc")
+                            if soc_val is not None:
+                                await client.publish("ess/sensors/backup_soc", str(soc_val), retain=True)
                 except Exception as sw_err:
-                    logger.debug(f"Switch state sync error: {sw_err}")
+                    logger.debug(f"Switch/select state sync error: {sw_err}")
             if loop_count % 60 == 1:
                 logger.info(f"Poll cycle {loop_count} successful. ESS is healthy.")
 
@@ -1174,7 +1393,7 @@ async def main():
                     await publish_legacy_raw_discovery(client, raw_list)
 
                 # Start control listener task
-                control_task = asyncio.create_task(handle_control(client, ess))
+                control_task = asyncio.create_task(handle_control(client, ess, lang=lang))
 
                 try:
                     await poll_loop(

@@ -1,5 +1,25 @@
 # Changelog
 
+## 0.1.12
+- **Lademodus-Auswahl (Select-Entität) & Fix für Schnellladung (#16)**:
+  - **Neues Dropdown/Select `select.charging_mode` (Lademodus)**:
+    - Unterstützt alle 3 offiziellen Lademodi der LG EnerVu Plus App:
+      1. **Batteriepflege** (`battery_care`, Wert `0`)
+      2. **Schnellladung** (`fast_charge`, Wert `1`)
+      3. **Wettervorhersage** (`weather_forecast`, Wert `2`)
+    - Automatische Lokalisierung (Deutsch: *Batteriepflege / Schnellladung / Wettervorhersage*, Englisch: *Battery Care / Fast Charge / Weather Forecast*).
+    - Flexibles MQTT-Kommando-Handling: Akzeptiert sowohl deutsche Namen, englische Bezeichnungen, numerische IDs (0, 1, 2) als auch Raw-Keys.
+  - **Reparatur des Schnelllade-Schalters (`switch.fastcharge`)**:
+    - Das bisherige Problem, bei dem das Einschalten von `switch.fastcharge` sofort wieder auf `OFF` zurücksprang, ist behoben. `pyess` hatte fälschlicherweise `alg_setting: "on"` gesendet, was der Wechselrichter ablehnte. Nun wird sauber `alg_setting: 1` gesetzt.
+    - Volle Abwärtskompatibilität: Beim Einschalten von `switch.fastcharge` wird in den Schnelllade-Modus gewechselt, beim Ausschalten in die Batteriepflege. Bestehende Dashboards und die *LG ESS Solar Card* funktionieren nahtlos weiter.
+- **Neuer Backup-Modus (`switch.backup_mode` & `number.backup_soc`)**:
+  - **Schalter `switch.backup_mode`**: Aktiviert oder deaktiviert den Notstrom-/Backup-Modus (`backupmode: "on"` / `"off"`).
+  - **Zahlenfeld `number.backup_soc`**: Ermöglicht das Einstellen des Notstrom-Mindestladestands (Reserve-SoC von 5% bis 100% in 5%-Schritten).
+- **Neuer Schalter „Aufladen vom Netz“ (`switch.charge_from_grid`)**:
+  - Ermöglicht das aktive Laden des Batteriespeichers aus dem Stromnetz (`autocharge: "1"` / `"0"`), besonders nützlich für dynamische Stromtarife (z. B. Tibber) im Winter.
+- **Erweiterte Live-Zustandssynchronisation**:
+  - Alle neuen Modi (Lademodus, Schnellladung, Backup-Modus, Netzladung, Backup-SoC) werden zyklisch direkt aus den Batterieeinstellungen des Wechselrichters synchronisiert, sodass Änderungen in der Hersteller-App sofort in Home Assistant sichtbar sind.
+
 ## 0.1.11
 - **Vollautomatische Kennwort-Erkennung via MAC-Adresse (Zero-Configuration Authentication) (#16)**:
   - Das Add-on ermittelt nun bei leer gelassenem `ess_password` die MAC-Adresse des LG ESS vollautomatisch über den lokalen ARP-Cache und mDNS/Netzwerk-Probing.
