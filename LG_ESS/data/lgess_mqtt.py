@@ -8,6 +8,8 @@ via MQTT Auto-Discovery with full multi-language localization (DE / EN).
 
 import argparse
 import asyncio
+import calendar
+import datetime
 import json
 import logging
 import os
@@ -58,7 +60,7 @@ DEVICE_INFO = {
     "name": "LG ESS",
     "manufacturer": "LG Electronics",
     "model": "ESS Home",
-    "sw_version": "0.1.11",
+    "sw_version": "0.1.14",
 }
 
 # Sensor definitions with localized names, units, device classes, and extractors
@@ -432,6 +434,37 @@ NUMBER_DEFINITIONS = [
     },
 ]
 
+DATE_DEFINITIONS = [
+    {
+        "id": "winter_mode_start",
+        "unique_id": "lgess_date_winter_mode_start",
+        "name": {"de": "Wintermodus Startdatum", "en": "Winter Mode Start Date"},
+        "icon": "mdi:calendar-start",
+        "command_topic": "ess/control/winter_mode_start",
+        "state_topic": "ess/sensors/winter_mode_start",
+    },
+    {
+        "id": "winter_mode_end",
+        "unique_id": "lgess_date_winter_mode_end",
+        "name": {"de": "Wintermodus Enddatum", "en": "Winter Mode End Date"},
+        "icon": "mdi:calendar-end",
+        "command_topic": "ess/control/winter_mode_end",
+        "state_topic": "ess/sensors/winter_mode_end",
+    },
+]
+
+BINARY_SENSOR_DEFINITIONS = [
+    {
+        "id": "winter_mode_active",
+        "unique_id": "lgess_binary_sensor_winter_mode_active",
+        "name": {"de": "Wintermodus aktiv", "en": "Winter Mode Active"},
+        "icon": "mdi:snowflake-check",
+        "state_topic": "ess/sensors/winter_mode_active",
+        "payload_on": "ON",
+        "payload_off": "OFF",
+    },
+]
+
 CHARGING_MODE_LABELS = {
     0: {"de": "Batteriepflege", "en": "Battery Care", "key": "battery_care"},
     1: {"de": "Schnellladung", "en": "Fast Charge", "key": "fast_charge"},
@@ -482,6 +515,68 @@ def get_charging_mode_key(mode_int):
     """Returns the raw ASCII identifier for a charging mode integer."""
     info = CHARGING_MODE_LABELS.get(mode_int, CHARGING_MODE_LABELS[0])
     return info["key"]
+
+
+def parse_mmdd(val):
+    """Parses various date string formats into an MMDD string (4 digits, e.g. '1101')."""
+    if not val:
+        return None
+    val_str = str(val).strip()
+    # YYYY-MM-DD or YYYY/MM/DD
+    m_iso = re.match(r"^\d{4}[-/](\d{1,2})[-/](\d{1,2})$", val_str)
+    if m_iso:
+        m, d = int(m_iso.group(1)), int(m_iso.group(2))
+        return f"{m:02d}{d:02d}"
+    # DD.MM.YYYY or DD.MM.
+    m_de = re.match(r"^(\d{1,2})\.(\d{1,2})\.?(\d{4})?$", val_str)
+    if m_de:
+        d, m = int(m_de.group(1)), int(m_de.group(2))
+        return f"{m:02d}{d:02d}"
+    # MM-DD or MM/DD
+    m_md = re.match(r"^(\d{1,2})[-/](\d{1,2})$", val_str)
+    if m_md:
+        m, d = int(m_md.group(1)), int(m_md.group(2))
+        return f"{m:02d}{d:02d}"
+    # 4 raw digits MMDD
+    if len(val_str) == 4 and val_str.isdigit():
+        m, d = int(val_str[:2]), int(val_str[2:])
+        if 1 <= m <= 12 and 1 <= d <= 31:
+            return val_str
+    return None
+
+
+def mmdd_to_iso(start_mmdd, stop_mmdd):
+    """Converts start and stop MMDD strings into ISO format YYYY-MM-DD for Home Assistant date entities."""
+    try:
+        now = datetime.date.today()
+        cur_y = now.year
+        cur_m = now.month
+
+        s_m, s_d = int(str(start_mmdd)[:2]), int(str(start_mmdd)[2:])
+        e_m, e_d = int(str(stop_mmdd)[:2]), int(str(stop_mmdd)[2:])
+
+        if s_m > e_m:  # Winter season crosses new year boundary (e.g. November -> February)
+            if cur_m <= e_m:
+                s_y = cur_y - 1
+                e_y = cur_y
+            else:
+                s_y = cur_y
+                e_y = cur_y + 1
+        else:  # Within same calendar year
+            if cur_m > e_m:
+                s_y = cur_y + 1
+                e_y = cur_y + 1
+            else:
+                s_y = cur_y
+                e_y = cur_y
+
+        s_d = min(s_d, calendar.monthrange(s_y, s_m)[1])
+        e_d = min(e_d, calendar.monthrange(e_y, e_m)[1])
+        return f"{s_y:04d}-{s_m:02d}-{s_d:02d}", f"{e_y:04d}-{e_m:02d}-{e_d:02d}"
+    except Exception as ex:
+        logger.warning(f"Error converting MMDD to ISO dates ({start_mmdd}, {stop_mmdd}): {ex}")
+        today_iso = datetime.date.today().isoformat()
+        return today_iso, today_iso
 
 
 # Legacy 2023 sensor.yaml mapping (exact friendly names and object_ids)
@@ -656,7 +751,44 @@ async def publish_discovery(mqtt_client, lang="de", power_unit="kW", entity_nami
         discovery_topic = f"homeassistant/number/lg_ess/{num_id}/config"
         await mqtt_client.publish(discovery_topic, json.dumps(payload), retain=True, qos=1)
 
-    # 5. Clean up deprecated discovery topics (e.g. legacy switch.fastcharge replaced by select.charging_mode)
+    # 5. Dates
+    for dt in DATE_DEFINITIONS:
+        dt_id = dt["id"]
+        name = dt["name"].get(lang, dt["name"]["de"])
+        obj_id = dt_id if entity_naming == "legacy" else dt["unique_id"]
+        payload = {
+            "name": name,
+            "unique_id": dt["unique_id"],
+            "default_entity_id": f"date.{obj_id}",
+            "object_id": obj_id,
+            "command_topic": dt["command_topic"],
+            "state_topic": dt["state_topic"],
+            "device": DEVICE_INFO,
+            "icon": dt["icon"],
+        }
+        discovery_topic = f"homeassistant/date/lg_ess/{dt_id}/config"
+        await mqtt_client.publish(discovery_topic, json.dumps(payload), retain=True, qos=1)
+
+    # 6. Binary Sensors
+    for bs in BINARY_SENSOR_DEFINITIONS:
+        bs_id = bs["id"]
+        name = bs["name"].get(lang, bs["name"]["de"])
+        obj_id = bs_id if entity_naming == "legacy" else bs["unique_id"]
+        payload = {
+            "name": name,
+            "unique_id": bs["unique_id"],
+            "default_entity_id": f"binary_sensor.{obj_id}",
+            "object_id": obj_id,
+            "state_topic": bs["state_topic"],
+            "payload_on": bs.get("payload_on", "ON"),
+            "payload_off": bs.get("payload_off", "OFF"),
+            "device": DEVICE_INFO,
+            "icon": bs["icon"],
+        }
+        discovery_topic = f"homeassistant/binary_sensor/lg_ess/{bs_id}/config"
+        await mqtt_client.publish(discovery_topic, json.dumps(payload), retain=True, qos=1)
+
+    # 7. Clean up deprecated discovery topics (e.g. legacy switch.fastcharge replaced by select.charging_mode)
     deprecated_discovery_topics = [
         "homeassistant/switch/lg_ess/fastcharge/config",
     ]
@@ -665,7 +797,8 @@ async def publish_discovery(mqtt_client, lang="de", power_unit="kW", entity_nami
 
     logger.info(
         f"Successfully published {len(SENSOR_DEFINITIONS)} sensors, {len(SWITCH_DEFINITIONS)} switches, "
-        f"{len(SELECT_DEFINITIONS)} selects, and {len(NUMBER_DEFINITIONS)} numbers to MQTT Discovery."
+        f"{len(SELECT_DEFINITIONS)} selects, {len(NUMBER_DEFINITIONS)} numbers, {len(DATE_DEFINITIONS)} dates, "
+        f"and {len(BINARY_SENSOR_DEFINITIONS)} binary sensors to MQTT Discovery."
     )
 
 
@@ -1148,7 +1281,33 @@ async def handle_control(client, ess, lang="de"):
                     payload_raw = msg.payload.decode().strip()
                     logger.info(f"Control command received on {topic}: {payload_raw}")
 
-                    if "winter_mode" in topic:
+                    if "winter_mode_start" in topic or "winter_start" in topic:
+                        mmdd = parse_mmdd(payload_raw)
+                        if mmdd:
+                            await ess.set_batt_settings({"startdate": mmdd})
+                            batt_settings = await ess.get_batt_settings()
+                            stop_mmdd = batt_settings.get("stopdate", "0228") if batt_settings else "0228"
+                            start_iso, _ = mmdd_to_iso(mmdd, stop_mmdd)
+                            await client.publish("ess/sensors/winter_mode_start", start_iso, retain=True)
+                            await client.publish("ess/sensors/winter_mode_start_mmdd", mmdd, retain=True)
+                            logger.info(f"Winter mode start date set to {mmdd} ({start_iso})")
+                        else:
+                            logger.warning(f"Invalid winter start date format received on {topic}: '{payload_raw}'")
+
+                    elif "winter_mode_end" in topic or "winter_mode_stop" in topic or "winter_end" in topic or "winter_stop" in topic:
+                        mmdd = parse_mmdd(payload_raw)
+                        if mmdd:
+                            await ess.set_batt_settings({"stopdate": mmdd})
+                            batt_settings = await ess.get_batt_settings()
+                            start_mmdd = batt_settings.get("startdate", "1101") if batt_settings else "1101"
+                            _, stop_iso = mmdd_to_iso(start_mmdd, mmdd)
+                            await client.publish("ess/sensors/winter_mode_end", stop_iso, retain=True)
+                            await client.publish("ess/sensors/winter_mode_end_mmdd", mmdd, retain=True)
+                            logger.info(f"Winter mode end date set to {mmdd} ({stop_iso})")
+                        else:
+                            logger.warning(f"Invalid winter end date format received on {topic}: '{payload_raw}'")
+
+                    elif "winter_mode" in topic:
                         state = str_to_bool(payload_raw)
                         await ess.set_batt_settings({"wintermode": "on" if state else "off"})
                         await client.publish("ess/sensors/winter_mode", "ON" if state else "OFF", retain=True)
@@ -1253,10 +1412,15 @@ async def poll_loop(ess, client, interval_seconds=5, auto_create=True, lang="de"
                     batt_info = common.get("BATT", {})
                     winter_val = batt_info.get("winter_setting")
                     if winter_val is None:
-                        winter_val = batt_info.get("winter_status") or home.get("wintermode", {}).get("winter_status")
+                        winter_val = home.get("wintermode", {}).get("winter_status")
                     if winter_val is not None:
                         is_winter = str(winter_val).strip().lower() in ("on", "1", "true")
                         await client.publish("ess/sensors/winter_mode", "ON" if is_winter else "OFF", retain=True)
+
+                    winter_act = batt_info.get("winter_status")
+                    if winter_act is not None:
+                        is_act = str(winter_act).strip().lower() in ("on", "1", "true")
+                        await client.publish("ess/sensors/winter_mode_active", "ON" if is_act else "OFF", retain=True)
 
                     op_status = home.get("operation", {}).get("status")
                     if op_status is not None:
@@ -1293,6 +1457,26 @@ async def poll_loop(ess, client, interval_seconds=5, auto_create=True, lang="de"
                             soc_val = batt_settings.get("backup_soc")
                             if soc_val is not None:
                                 await client.publish("ess/sensors/backup_soc", str(soc_val), retain=True)
+
+                            # 4.5 Winter mode dates & status
+                            start_mmdd = batt_settings.get("startdate")
+                            stop_mmdd = batt_settings.get("stopdate")
+                            if start_mmdd and stop_mmdd:
+                                s_iso, e_iso = mmdd_to_iso(str(start_mmdd), str(stop_mmdd))
+                                await client.publish("ess/sensors/winter_mode_start", s_iso, retain=True)
+                                await client.publish("ess/sensors/winter_mode_end", e_iso, retain=True)
+                                await client.publish("ess/sensors/winter_mode_start_mmdd", str(start_mmdd), retain=True)
+                                await client.publish("ess/sensors/winter_mode_end_mmdd", str(stop_mmdd), retain=True)
+
+                            w_act = batt_settings.get("winter_status")
+                            if w_act is not None:
+                                is_act = str(w_act).strip().lower() in ("on", "1", "true")
+                                await client.publish("ess/sensors/winter_mode_active", "ON" if is_act else "OFF", retain=True)
+
+                            w_set = batt_settings.get("winter_setting")
+                            if w_set is not None:
+                                is_winter = str(w_set).strip().lower() in ("on", "1", "true")
+                                await client.publish("ess/sensors/winter_mode", "ON" if is_winter else "OFF", retain=True)
                 except Exception as sw_err:
                     logger.debug(f"Switch/select state sync error: {sw_err}")
             if loop_count % 60 == 1:

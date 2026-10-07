@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.1.14
+- **Wintermodus-Datumseinstellung & Aktivitäts-Status**:
+  - **Neue Datums-Entitäten (`date.winter_mode_start` & `date.winter_mode_end`)**:
+    - Ermöglicht das direkte Einstellen des Start- und Enddatums für den Wintermodus (z. B. Start: 01.11., Ende: 28.02.) über native Home Assistant Datums-Picker.
+    - Die Entitäten synchronisieren sich automatisch mit den im LG ESS Wechselrichter gespeicherten Parametern (`startdate` und `stopdate` im Format MMDD).
+    - Berücksichtigt den Jahreswechsel über die Wintersaison (z. B. November 2026 bis Februar 2027) vollautomatisch.
+    - Flexibles MQTT-Kommando-Handling: Akzeptiert sowohl ISO-Datumsstrings (`YYYY-MM-DD`), deutsches Datumsformat (`DD.MM.`), als auch rohe 4-stellige `MMDD`-Werte auf den Themen `ess/control/winter_mode_start` und `ess/control/winter_mode_end`.
+  - **Neuer Binärsensor `binary_sensor.winter_mode_active`**:
+    - Zeigt an, ob der Wintermodus zum heutigen Datum **aktiv** ist (`winter_status` des Wechselrichters).
+    - Schafft klare Trennung zwischen dem Konfigurationsschalter (`switch.winter_mode`, ob der Modus prinzipiell aktiviert ist) und dem tatsächlichen saisonalen Schutzstatus (`binary_sensor.winter_mode_active`).
+
 ## 0.1.13
 - **Entfernung des redundanten Schnelllade-Schalters (`switch.fastcharge`)**:
   - Da mit Version 0.1.12 die offizielle 3-Wege-Auswahl `select.charging_mode` (*Batteriepflege*, *Schnellladung*, *Wettervorhersage*) eingeführt wurde, war der binäre Schalter `switch.fastcharge` redundant und konnte den 3-Zustands-Modus nicht vollständig abbilden (z. B. versehentliches Überschreiben von *Wettervorhersage* beim Ausschalten).
