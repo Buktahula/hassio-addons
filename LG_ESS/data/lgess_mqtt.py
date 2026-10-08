@@ -319,6 +319,16 @@ SENSOR_DEFINITIONS = [
         "calc": calc_autarky,
     },
     {
+        "id": "feed_in_limitation",
+        "unique_id": "lgess_feed_in_limitation",
+        "object_ids": {"de": "einspeisebegrenzung", "en": "feed_in_limitation"},
+        "name": {"de": "Einspeisebegrenzung", "en": "Feed-in Limitation"},
+        "state_class": "measurement",
+        "unit": "%",
+        "icon": "mdi:transmission-tower-export",
+        "calc": lambda h, c: int(round(safe_float(c.get("PCS", {}).get("feed_in_limitation")))) if c.get("PCS", {}).get("feed_in_limitation") is not None else None,
+    },
+    {
         "id": "pv1_voltage",
         "unique_id": "lgess_pv1_voltage",
         "object_ids": {"de": "pv_string_1_spannung", "en": "pv_string_1_voltage"},
@@ -454,6 +464,18 @@ NUMBER_DEFINITIONS = [
         "step": 5,
         "command_topic": "ess/control/battery_safety_soc",
         "state_topic": "ess/sensors/battery_safety_soc",
+    },
+    {
+        "id": "feed_in_limitation",
+        "unique_id": "lgess_number_feed_in_limitation",
+        "name": {"de": "Einspeisebegrenzung", "en": "Feed-in Limitation"},
+        "icon": "mdi:transmission-tower-export",
+        "unit": "%",
+        "min": 0,
+        "max": 100,
+        "step": 1,
+        "command_topic": "ess/control/feed_in_limitation",
+        "state_topic": "ess/sensors/feed_in_limitation",
     },
 ]
 
@@ -651,6 +673,7 @@ LEGACY_NAMES = {
     "battery_safety_soc": "Batterie Mindest-Ladezustand",
     "winter_mode_start": "Wintermodus Startdatum",
     "winter_mode_end": "Wintermodus Enddatum",
+    "feed_in_limitation": "Einspeisebegrenzung",
 }
 
 LEGACY_OBJECT_IDS = {
@@ -685,6 +708,7 @@ LEGACY_OBJECT_IDS = {
     "battery_safety_soc": "battery_safety_soc",
     "winter_mode_start": "winter_mode_start",
     "winter_mode_end": "winter_mode_end",
+    "feed_in_limitation": "feed_in_limitation",
 }
 
 
@@ -1416,6 +1440,49 @@ async def set_batt_safety_soc(ess, soc_val, installer_password=None):
     return True
 
 
+async def set_pv_feedin_limit(ess, limit_val, installer_password=None):
+    """
+    Sets the active power feed-in limitation (pv_feedin_limit, in percent 0-100%) on the LG ESS.
+    If installer_password is not provided, attempts auto-detection via regnum.
+    Authenticates via /v1/installer/setting/login and sends the setting to /v1/installer/setting/pcs.
+    """
+    limit_str = str(limit_val)
+    if not installer_password and getattr(ess, "ip", None):
+        if not hasattr(set_batt_safety_soc, "_cached_installer_password"):
+            set_batt_safety_soc._cached_installer_password = await detect_installer_password(ess, getattr(ess, "pw", None))
+        installer_password = set_batt_safety_soc._cached_installer_password
+
+    if installer_password and getattr(ess, "ip", None):
+        inst_url = f"https://{ess.ip}/v1/installer/setting/login"
+        logger.info(f"Authentifiziere am LG ESS ({ess.ip}) im Installateur-Modus für Einspeisebegrenzung...")
+        try:
+            async with ess.session.put(inst_url, json={"password": str(installer_password).strip()}) as r:
+                resp = await r.json()
+            if resp.get("status") == "success" and "auth_key" in resp:
+                inst_auth = resp["auth_key"]
+                logger.info(f"Installateur-Login erfolgreich! Sende Einspeisebegrenzung pv_feedin_limit={limit_str}% an /v1/installer/setting/pcs...")
+                pcs_url = f"https://{ess.ip}/v1/installer/setting/pcs"
+                payload = {"auth_key": inst_auth, "pv_feedin_limit": limit_str}
+                async with ess.session.put(pcs_url, json=payload) as r_pcs:
+                    res_pcs = await r_pcs.json()
+                logger.info(f"Installateur-Endpunkt (PCS) Antwort: {res_pcs}")
+                try:
+                    await ess._login()
+                except Exception:
+                    pass
+                return True
+            else:
+                logger.warning(f"Installateur-Login mit Registriernummer nicht erfolgreich: {resp}")
+        except Exception as ex:
+            logger.warning(f"Fehler beim Installateur-Login / PCS-Einstellung: {ex}")
+    else:
+        logger.warning(
+            "Kein Installateur-Kennwort vorhanden. Die Einspeisebegrenzung kann nur im Installateur-Modus angepasst werden. "
+            "Hinterlege das Installateur-Passwort (Registrierungsnummer) in der Add-on-Konfiguration unter 'installer_password'."
+        )
+    return False
+
+
 async def handle_control(client, ess, lang="de", installer_password=None):
     """Listens for control commands on ess/control/# and interacts with LG ESS."""
     try:
@@ -1497,6 +1564,18 @@ async def handle_control(client, ess, lang="de", installer_password=None):
                             logger.info(f"Battery safety SoC commanded to {soc_val}%")
                         except Exception as ex:
                             logger.warning(f"Invalid battery_safety_soc value received: {payload_raw}: {ex}")
+
+                    elif any(k in topic for k in ("feed_in_limitation", "feedin", "pv_feedin_limit", "einspeisebegrenzung")):
+                        try:
+                            limit_val = int(round(float(payload_raw)))
+                            limit_val = max(0, min(100, limit_val))
+                            logger.info(f"Setting feed-in limitation to {limit_val}%...")
+                            success = await set_pv_feedin_limit(ess, limit_val, installer_password=installer_password)
+                            if success:
+                                await client.publish("ess/sensors/feed_in_limitation", str(limit_val), retain=True)
+                                logger.info(f"Feed-in limitation commanded to {limit_val}%")
+                        except Exception as ex:
+                            logger.warning(f"Invalid feed_in_limitation value received: {payload_raw}: {ex}")
 
                     elif "charging_mode" in topic:
                         mode_int = parse_charging_mode(payload_raw)
@@ -1599,6 +1678,15 @@ async def poll_loop(ess, client, interval_seconds=5, auto_create=True, lang="de"
                     if op_status is not None:
                         is_active = str(op_status).strip().lower() in ("start", "on", "1", "true")
                         await client.publish("ess/sensors/active", "ON" if is_active else "OFF", retain=True)
+
+                    pcs_info = common.get("PCS", {})
+                    feedin_val = pcs_info.get("feed_in_limitation")
+                    if feedin_val is not None:
+                        try:
+                            val_int = int(round(float(feedin_val)))
+                            await client.publish("ess/sensors/feed_in_limitation", str(val_int), retain=True)
+                        except Exception:
+                            await client.publish("ess/sensors/feed_in_limitation", str(feedin_val), retain=True)
 
                     if loop_count % 6 == 1:
                         batt_settings = await ess.get_batt_settings()

@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.18
+- **Einspeisebegrenzung / Einspeisemenge im Installateur-Modus steuerbar (`number.feed_in_limitation`)**:
+  - Neue Steuerentität `number.feed_in_limitation` (Bereich: 0 % bis 100 %, Schrittweite 1 %): Erlaubt die stufenlose Vorgabe der Wirkleistungseinspeisung / Einspeisebegrenzung direkt aus Home Assistant heraus.
+  - Neuer Sensor `sensor.feed_in_limitation` (Legacy: `sensor.feed_in_limitation`, Modern: `sensor.einspeisebegrenzung`): Zeigt die aktuelle Begrenzung der Netzeinspeisung in Prozent an.
+  - Das Add-on überträgt Änderungen über den offiziellen Installateur-Endpunkt (`/v1/installer/setting/pcs`, Parameter `pv_feedin_limit`) unter Verwendung des (automatisch erkannten oder konfigurierten) Installateur-Kennworts.
+  - Live-Rückmeldung und bidirektionale Synchronisation mit den echten Telemetriedaten des Wechselrichters auf jedem Polling-Zyklus (`common/PCS/feed_in_limitation`).
+
 ## 0.1.17
 - **Vollautomatische Erkennung des Installateur-Kennworts (Registrierungsnummer)**:
   - Das Installateur-Kennwort (die Registrierungsnummer des Wechselrichters, z. B. `DE2208BKRE...`) wird nun beim Benutzer-Login am Wechselrichter vollautomatisch ausgelesen und als Installateur-Zugang verifiziert.

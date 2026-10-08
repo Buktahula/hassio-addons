@@ -161,6 +161,7 @@ In Home Assistant hängen alle Langzeitstatistiken (LTS) und Verläufe im Energi
 | **Batterieladestand (%)** | `sensor.battery_load_percent` ✅ | `sensor.batterie_ladestand` |
 | **Autarkiegrad (%)** | `sensor.solaredge_calculated_self_sufficiency` ✅ | `sensor.autarkie_grad_heute` |
 | **Eigenverbrauchsrate (%)** | `sensor.energy_day_self_consumption_rate` ✅ | `sensor.eigenverbrauchsrate_heute` |
+| **Einspeisebegrenzung (%)** | `number.feed_in_limitation` / `sensor.feed_in_limitation` ✅ | `number.feed_in_limitation` / `sensor.einspeisebegrenzung` |
 
 ---
 
