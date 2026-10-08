@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.1.17
+- **Vollautomatische Erkennung des Installateur-Kennworts (Registrierungsnummer)**:
+  - Das Installateur-Kennwort (die Registrierungsnummer des Wechselrichters, z. B. `DE2208BKRE...`) wird nun beim Benutzer-Login am Wechselrichter vollautomatisch ausgelesen und als Installateur-Zugang verifiziert.
+  - Das manuelle Eintragen von `installer_password` in der Add-on-Konfiguration ist nicht mehr erforderlich – das Add-on erkennt es selbstständig und übernimmt es automatisch in die Konfiguration.
+- **Korrektur der Ladezustands-Untergrenze (`safety_soc` vs. `safty_soc`)**:
+  - Unterstützung beider Schreibweisen (`safety_soc` und `safty_soc`), da die neuere LG ESS Firmware intern `safety_soc` (mit 'e') verwendet.
+  - Beim Einstellen von `number.battery_safety_soc` wird der Wert nun im Installateur-Modus zuverlässig an den Wechselrichter übertragen und dort persistiert.
+- **Sensor-Stabilität (`sensor.battery_safety_soc` & `number.battery_safety_soc`)**:
+  - Unterdrückung der Publikation von `None`-Werten im Polling-Zyklus, wodurch verhindert wird, dass die Entitäten in Home Assistant auf `unknown` zurückfallen.
+  - Live-Rückmeldung und bidirektionale Synchronisation mit den echten Hardware-Werten des LG ESS.
+
 ## 0.1.16
 - **Wintermodus-Datum ohne abschließenden Punkt (`TT.MM`)**:
   - Die Anzeige der Wintermodus-Daten (`text.winter_mode_start` und `text.winter_mode_end`) erfolgt nun sauber im Format `01.11` und `28.02` ohne störenden Punkt am Ende.

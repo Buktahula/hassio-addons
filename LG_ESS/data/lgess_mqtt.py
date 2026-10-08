@@ -296,7 +296,7 @@ SENSOR_DEFINITIONS = [
         "state_class": "measurement",
         "unit": "%",
         "icon": "mdi:battery-alert",
-        "calc": lambda h, c: round(safe_float(c.get("BATT", {}).get("safty_soc")), 1) if c.get("BATT", {}).get("safty_soc") is not None else None,
+        "calc": lambda h, c: int(round(safe_float(c.get("BATT", {}).get("safety_soc") if c.get("BATT", {}).get("safety_soc") is not None else c.get("BATT", {}).get("safty_soc")))) if (c.get("BATT", {}).get("safety_soc") is not None or c.get("BATT", {}).get("safty_soc") is not None) else None,
     },
     {
         "id": "energy_day_self_consumption_rate",
@@ -1287,14 +1287,56 @@ def detect_ess_password(ip, name=None):
     return None
 
 
-async def save_password_to_supervisor(password):
+async def detect_installer_password(ess, user_password=None):
     """
-    Saves the automatically discovered password back into Home Assistant
-    Add-on options via the Supervisor API so the user sees it in the UI.
+    Attempts to read the inverter registration number (regnum) from /v1/user/setting/login
+    and verifies if it works as the installer password via /v1/installer/setting/login.
+    """
+    if not ess or not getattr(ess, "ip", None):
+        return None
+
+    pw = user_password or getattr(ess, "pw", None)
+    if not pw:
+        return None
+
+    try:
+        login_url = f"https://{ess.ip}/v1/user/setting/login"
+        async with ess.session.put(login_url, json={"password": str(pw)}) as r:
+            data = await r.json()
+        regnum = data.get("regnum")
+        if regnum:
+            regnum = str(regnum).strip()
+            # Verify installer login with regnum
+            inst_url = f"https://{ess.ip}/v1/installer/setting/login"
+            async with ess.session.put(inst_url, json={"password": regnum}) as r_inst:
+                inst_data = await r_inst.json()
+            if inst_data.get("status") == "success" and "auth_key" in inst_data:
+                logger.info(f"Installateur-Zugang erfolgreich mit Registrierungsnummer ({regnum}) verifiziert.")
+                return regnum
+            else:
+                logger.debug(f"Installateur-Login mit Registrierungsnummer ({regnum}) nicht erfolgreich: {inst_data}")
+    except Exception as ex:
+        logger.debug(f"Fehler bei automatischer Installateur-Kennwort-Erkennung: {ex}")
+
+    return None
+
+
+async def save_password_to_supervisor(ess_password=None, installer_password=None):
+    """
+    Saves the automatically discovered passwords (ess_password and/or installer_password)
+    back into Home Assistant Add-on options via the Supervisor API so the user sees them in the UI.
     """
     token = os.environ.get("SUPERVISOR_TOKEN") or os.environ.get("HASSIO_TOKEN")
     if not token:
-        logger.debug("SUPERVISOR_TOKEN nicht verfügbar; Passwort wird nur im Speicher gehalten.")
+        logger.debug("SUPERVISOR_TOKEN nicht verfügbar; Passwörter werden nur im Speicher gehalten.")
+        return False
+
+    options = {}
+    if ess_password:
+        options["ess_password"] = ess_password
+    if installer_password:
+        options["installer_password"] = installer_password
+    if not options:
         return False
 
     url = "http://supervisor/addons/self/options"
@@ -1302,31 +1344,41 @@ async def save_password_to_supervisor(password):
         "Authorization": f"Bearer {token}",
         "Content-Type": "application/json",
     }
-    payload = {"options": {"ess_password": password}}
+    payload = {"options": options}
     try:
         timeout = aiohttp.ClientTimeout(total=5)
         async with aiohttp.ClientSession(timeout=timeout) as session:
             async with session.post(url, headers=headers, json=payload) as resp:
                 if resp.status == 200:
-                    logger.info("🔑 Standard-Passwort wurde automatisch in die Home Assistant Add-on-Konfiguration übernommen!")
+                    saved_items = []
+                    if ess_password:
+                        saved_items.append("Standard-Passwort")
+                    if installer_password:
+                        saved_items.append("Installateur-Kennwort")
+                    logger.info(f"🔑 {' & '.join(saved_items)} wurde(n) automatisch in die Home Assistant Add-on-Konfiguration übernommen!")
                     return True
                 else:
                     text = await resp.text()
                     logger.debug(f"Supervisor options response ({resp.status}): {text}")
     except Exception as ex:
-        logger.debug(f"Konnte Passwort nicht in Supervisor-Optionen speichern: {ex}")
+        logger.debug(f"Konnte Passwörter nicht in Supervisor-Optionen speichern: {ex}")
     return False
 
 
 async def set_batt_safety_soc(ess, soc_val, installer_password=None):
     """
-    Sets the battery safety SoC (safty_soc) on the LG ESS.
-    If installer_password (typically registration number like DE200...) is configured,
-    it authenticates via /v1/installer/setting/login and sends the setting to
+    Sets the battery safety SoC (safety_soc) on the LG ESS.
+    If installer_password (typically registration number like DE200...) is configured or
+    auto-detected, it authenticates via /v1/installer/setting/login and sends the setting to
     /v1/installer/setting/batt.
     Otherwise, it sends the command to /v1/user/setting/batt.
     """
     soc_str = str(soc_val)
+    if not installer_password and getattr(ess, "ip", None):
+        if not hasattr(set_batt_safety_soc, "_cached_installer_password"):
+            set_batt_safety_soc._cached_installer_password = await detect_installer_password(ess, getattr(ess, "pw", None))
+        installer_password = set_batt_safety_soc._cached_installer_password
+
     if installer_password and getattr(ess, "ip", None):
         inst_url = f"https://{ess.ip}/v1/installer/setting/login"
         logger.info(f"Authentifiziere am LG ESS ({ess.ip}) im Installateur-Modus...")
@@ -1337,15 +1389,13 @@ async def set_batt_safety_soc(ess, soc_val, installer_password=None):
                 inst_auth = resp["auth_key"]
                 logger.info("Installateur-Login erfolgreich! Sende Safety-SoC an Installateur-Endpunkt...")
                 batt_url = f"https://{ess.ip}/v1/installer/setting/batt"
-                async with ess.session.put(batt_url, json={"auth_key": inst_auth, "safty_soc": soc_str}) as r_batt:
+                # Send both safety_soc and safty_soc to ensure compatibility across all firmware versions
+                payload = {"auth_key": inst_auth, "safety_soc": soc_str, "safty_soc": soc_str}
+                async with ess.session.put(batt_url, json=payload) as r_batt:
                     res_batt = await r_batt.json()
                 logger.info(f"Installateur-Endpunkt Antwort: {res_batt}")
                 try:
-                    await ess.set_batt_settings({"safty_soc": soc_str})
-                except Exception:
-                    pass
-                try:
-                    await ess._login()
+                    await ess.set_batt_settings({"safety_soc": soc_str, "safty_soc": soc_str})
                 except Exception:
                     pass
                 return True
@@ -1354,9 +1404,9 @@ async def set_batt_safety_soc(ess, soc_val, installer_password=None):
         except Exception as ex:
             logger.warning(f"Fehler beim Installateur-Login: {ex}. Versuche Standard-User-Endpunkt...")
 
-    # Standard user endpoint
-    logger.info(f"Sende safty_soc={soc_str}% an /v1/user/setting/batt...")
-    await ess.set_batt_settings({"safty_soc": soc_str})
+    # Standard user endpoint fallback
+    logger.info(f"Sende safety_soc={soc_str}% an /v1/user/setting/batt...")
+    await ess.set_batt_settings({"safety_soc": soc_str, "safty_soc": soc_str})
     if not installer_password:
         logger.info(
             "Tipp: Wenn der Wechselrichter die Änderung der Ladezustands-Untergrenze abweist, "
@@ -1511,6 +1561,8 @@ async def poll_loop(ess, client, interval_seconds=5, auto_create=True, lang="de"
                 for s in SENSOR_DEFINITIONS:
                     try:
                         val = s["calc"](home, common)
+                        if val is None:
+                            continue
                         if s.get("type") == "power":
                             if power_unit == "kW":
                                 val = round(val * 0.001, 3)
@@ -1523,9 +1575,13 @@ async def poll_loop(ess, client, interval_seconds=5, auto_create=True, lang="de"
                 # 4. Synchronize switch / select / number states with LG ESS live telemetry
                 try:
                     batt_info = common.get("BATT", {})
-                    safty_val = batt_info.get("safty_soc")
-                    if safty_val is not None:
-                        await client.publish("ess/sensors/battery_safety_soc", str(safty_val), retain=True)
+                    safety_val = batt_info.get("safety_soc") if batt_info.get("safety_soc") is not None else batt_info.get("safty_soc")
+                    if safety_val is not None:
+                        try:
+                            val_int = int(round(float(safety_val)))
+                            await client.publish("ess/sensors/battery_safety_soc", str(val_int), retain=True)
+                        except Exception:
+                            await client.publish("ess/sensors/battery_safety_soc", str(safety_val), retain=True)
 
                     winter_val = batt_info.get("winter_setting")
                     if winter_val is None:
@@ -1575,9 +1631,13 @@ async def poll_loop(ess, client, interval_seconds=5, auto_create=True, lang="de"
                             if soc_val is not None:
                                 await client.publish("ess/sensors/backup_soc", str(soc_val), retain=True)
 
-                            safty_val = batt_settings.get("safty_soc")
-                            if safty_val is not None:
-                                await client.publish("ess/sensors/battery_safety_soc", str(safty_val), retain=True)
+                            safety_val = batt_settings.get("safety_soc") if batt_settings.get("safety_soc") is not None else batt_settings.get("safty_soc")
+                            if safety_val is not None:
+                                try:
+                                    val_int = int(round(float(safety_val)))
+                                    await client.publish("ess/sensors/battery_safety_soc", str(val_int), retain=True)
+                                except Exception:
+                                    await client.publish("ess/sensors/battery_safety_soc", str(safety_val), retain=True)
 
                             # 4.5 Winter mode dates & status
                             start_mmdd = batt_settings.get("startdate")
@@ -1679,7 +1739,25 @@ async def main():
 
     if auto_detected_pw:
         logger.info("✅ Erfolgreich mit dem Standard-Passwort (MAC-Adresse) am LG ESS angemeldet!")
-        asyncio.create_task(save_password_to_supervisor(password))
+
+    # Determine Installer Password (manual or automatic detection via registration number)
+    installer_password = args.installer_password
+    auto_detected_inst_pw = False
+
+    if not installer_password:
+        logger.info("Kein Installateur-Passwort konfiguriert. Versuche automatische Ermittlung der Registrierungsnummer...")
+        installer_password = await detect_installer_password(ess, password)
+        if installer_password:
+            auto_detected_inst_pw = True
+            logger.info(f"🔑 Registrierungsnummer (Installateur-Kennwort) automatisch erkannt: {installer_password[:4]}****{installer_password[-2:]}")
+
+    if auto_detected_pw or auto_detected_inst_pw:
+        asyncio.create_task(
+            save_password_to_supervisor(
+                ess_password=password if auto_detected_pw else None,
+                installer_password=installer_password if auto_detected_inst_pw else None,
+            )
+        )
 
     while True:
         try:
@@ -1702,7 +1780,7 @@ async def main():
                     await publish_legacy_raw_discovery(client, raw_list)
 
                 # Start control listener task
-                control_task = asyncio.create_task(handle_control(client, ess, lang=lang, installer_password=args.installer_password))
+                control_task = asyncio.create_task(handle_control(client, ess, lang=lang, installer_password=installer_password))
 
                 try:
                     await poll_loop(
