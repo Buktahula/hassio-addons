@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.1.16
+- **Wintermodus-Datum ohne abschließenden Punkt (`TT.MM`)**:
+  - Die Anzeige der Wintermodus-Daten (`text.winter_mode_start` und `text.winter_mode_end`) erfolgt nun sauber im Format `01.11` und `28.02` ohne störenden Punkt am Ende.
+  - Akzeptiert bei der Eingabe weiterhin alle Varianten (`01.11`, `01.11.`, `1101` etc.).
+- **Installateur-Modus & Registrierungsnummer (`installer_password`)**:
+  - Neue Add-on-Option `installer_password`: Ermöglicht die Eingabe des Installateur-Kennworts (welches beim LG ESS werkseitig der **Registrierungsnummer** des Wechselrichters entspricht, z. B. `DE200...`).
+  - Beim Einstellen der Ladezustands-Untergrenze (`number.battery_safety_soc`) meldet sich das Add-on über den offiziellen Installateur-Endpunkt (`/v1/installer/setting/login`) am Wechselrichter an und überträgt den gewünschten Safety-SoC direkt an `/v1/installer/setting/batt`.
+- **Stabilität & Validierung**:
+  - `number.battery_safety_soc` unterstützt nun den vollen Bereich ab 0 % bis 50 %, wodurch HA-Validierungsfehler bei Systemen mit 0 % Minimal-SoC vermieden werden.
+  - Behebung von Textlängen-Meldungen bei älteren gespeicherten MQTT-Nachrichten.
+
 ## 0.1.15
 - **Wintermodus-Datumseinstellung ohne Jahreszahl (`text.winter_mode_start` & `text.winter_mode_end`)**:
   - Wie in der offiziellen LG EnerVu App ist die Wintermodus-Einstellung eine jährlich wiederkehrende Kalenderspanne (nur Tag und Monat).

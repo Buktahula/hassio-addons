@@ -100,6 +100,13 @@ ARGS=()
 if [ -n "$ESS_PASSWORD" ]; then
     ARGS+=("--ess_password" "${ESS_PASSWORD}")
 fi
+if bashio::config.has_value 'installer_password'; then
+    INSTALLER_PASSWORD=$(bashio::config 'installer_password')
+    if [ -n "$INSTALLER_PASSWORD" ]; then
+        ARGS+=("--installer_password" "${INSTALLER_PASSWORD}")
+        bashio::log.info "Installateur-Passwort konfiguriert (Erweiterter Zugriff auf Sicherheits- und Batterieeinstellungen aktiv)."
+    fi
+fi
 ARGS+=("--mqtt_server" "${MQTT_HOST}")
 ARGS+=("--mqtt_port" "${MQTT_PORT}")
 ARGS+=("--interval_seconds" "${INTERVAL}")

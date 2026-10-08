@@ -296,7 +296,7 @@ SENSOR_DEFINITIONS = [
         "state_class": "measurement",
         "unit": "%",
         "icon": "mdi:battery-alert",
-        "calc": lambda h, c: round(safe_float(c.get("BATT", {}).get("safty_soc", 0)), 1),
+        "calc": lambda h, c: round(safe_float(c.get("BATT", {}).get("safty_soc")), 1) if c.get("BATT", {}).get("safty_soc") is not None else None,
     },
     {
         "id": "energy_day_self_consumption_rate",
@@ -449,7 +449,7 @@ NUMBER_DEFINITIONS = [
         "name": {"de": "Batterie Mindest-Ladezustand", "en": "Battery Min SoC"},
         "icon": "mdi:battery-alert",
         "unit": "%",
-        "min": 5,
+        "min": 0,
         "max": 50,
         "step": 5,
         "command_topic": "ess/control/battery_safety_soc",
@@ -465,8 +465,8 @@ TEXT_DEFINITIONS = [
         "icon": "mdi:calendar-start",
         "command_topic": "ess/control/winter_mode_start",
         "state_topic": "ess/sensors/winter_mode_start",
-        "min": 4,
-        "max": 6,
+        "min": 1,
+        "max": 16,
         "mode": "text",
     },
     {
@@ -476,8 +476,8 @@ TEXT_DEFINITIONS = [
         "icon": "mdi:calendar-end",
         "command_topic": "ess/control/winter_mode_end",
         "state_topic": "ess/sensors/winter_mode_end",
-        "min": 4,
-        "max": 6,
+        "min": 1,
+        "max": 16,
         "mode": "text",
     },
 ]
@@ -575,11 +575,11 @@ def parse_mmdd(val):
 
 
 def mmdd_to_display(mmdd):
-    """Converts MMDD string (e.g. '1101') to day.month format '01.11.' without year."""
+    """Converts MMDD string (e.g. '1101') to day.month format '01.11' without year and without trailing dot."""
     try:
         val = str(mmdd).strip().zfill(4)
         m, d = int(val[:2]), int(val[2:])
-        return f"{d:02d}.{m:02d}."
+        return f"{d:02d}.{m:02d}"
     except Exception:
         return str(mmdd)
 
@@ -1318,7 +1318,55 @@ async def save_password_to_supervisor(password):
     return False
 
 
-async def handle_control(client, ess, lang="de"):
+async def set_batt_safety_soc(ess, soc_val, installer_password=None):
+    """
+    Sets the battery safety SoC (safty_soc) on the LG ESS.
+    If installer_password (typically registration number like DE200...) is configured,
+    it authenticates via /v1/installer/setting/login and sends the setting to
+    /v1/installer/setting/batt.
+    Otherwise, it sends the command to /v1/user/setting/batt.
+    """
+    soc_str = str(soc_val)
+    if installer_password and getattr(ess, "ip", None):
+        inst_url = f"https://{ess.ip}/v1/installer/setting/login"
+        logger.info(f"Authentifiziere am LG ESS ({ess.ip}) im Installateur-Modus...")
+        try:
+            async with ess.session.put(inst_url, json={"password": str(installer_password).strip()}) as r:
+                resp = await r.json()
+            if resp.get("status") == "success" and "auth_key" in resp:
+                inst_auth = resp["auth_key"]
+                logger.info("Installateur-Login erfolgreich! Sende Safety-SoC an Installateur-Endpunkt...")
+                batt_url = f"https://{ess.ip}/v1/installer/setting/batt"
+                async with ess.session.put(batt_url, json={"auth_key": inst_auth, "safty_soc": soc_str}) as r_batt:
+                    res_batt = await r_batt.json()
+                logger.info(f"Installateur-Endpunkt Antwort: {res_batt}")
+                try:
+                    await ess.set_batt_settings({"safty_soc": soc_str})
+                except Exception:
+                    pass
+                try:
+                    await ess._login()
+                except Exception:
+                    pass
+                return True
+            else:
+                logger.warning(f"Installateur-Login mit Registriernummer nicht erfolgreich: {resp}. Versuche Standard-User-Endpunkt...")
+        except Exception as ex:
+            logger.warning(f"Fehler beim Installateur-Login: {ex}. Versuche Standard-User-Endpunkt...")
+
+    # Standard user endpoint
+    logger.info(f"Sende safty_soc={soc_str}% an /v1/user/setting/batt...")
+    await ess.set_batt_settings({"safty_soc": soc_str})
+    if not installer_password:
+        logger.info(
+            "Tipp: Wenn der Wechselrichter die Änderung der Ladezustands-Untergrenze abweist, "
+            "hinterlege das Installateur-Passwort (meist die Registrierungsnummer wie DE200...) "
+            "in der Add-on-Konfiguration unter 'installer_password'."
+        )
+    return True
+
+
+async def handle_control(client, ess, lang="de", installer_password=None):
     """Listens for control commands on ess/control/# and interacts with LG ESS."""
     try:
         await client.subscribe("ess/control/#")
@@ -1392,9 +1440,9 @@ async def handle_control(client, ess, lang="de"):
                     elif "battery_safety_soc" in topic or "safty_soc" in topic or "safety_soc" in topic:
                         try:
                             soc_val = int(round(float(payload_raw)))
-                            soc_val = max(5, min(50, soc_val))
+                            soc_val = max(0, min(50, soc_val))
                             logger.info(f"Setting battery safety SoC to {soc_val}%...")
-                            await ess.set_batt_settings({"safty_soc": str(soc_val)})
+                            await set_batt_safety_soc(ess, soc_val, installer_password=installer_password)
                             await client.publish("ess/sensors/battery_safety_soc", str(soc_val), retain=True)
                             logger.info(f"Battery safety SoC commanded to {soc_val}%")
                         except Exception as ex:
@@ -1583,6 +1631,7 @@ async def main():
     parser.add_argument("--entity_naming", default="legacy", choices=["legacy", "modern"], help="Naming schema: legacy (2023 sensor.yaml) or modern")
     parser.add_argument("--hass_autoconfig_sensors", default=None, help="Legacy pyess autoconfig list (optional)")
     parser.add_argument("--legacy_raw_sensors", default="true", help="Publish pyess legacy raw MQTT discovery sensors (sensor.ess_ess_*)")
+    parser.add_argument("--installer_password", default=None, help="LG ESS installer password (typically registration number DE200...)")
 
     args = parser.parse_args()
 
@@ -1653,7 +1702,7 @@ async def main():
                     await publish_legacy_raw_discovery(client, raw_list)
 
                 # Start control listener task
-                control_task = asyncio.create_task(handle_control(client, ess, lang=lang))
+                control_task = asyncio.create_task(handle_control(client, ess, lang=lang, installer_password=args.installer_password))
 
                 try:
                     await poll_loop(
