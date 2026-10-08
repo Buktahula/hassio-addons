@@ -1,0 +1,53 @@
+configuration:
+  ess_host:
+    name: "LG ESS IP Address / Host"
+    description: "Optional IP address or hostname of the LG ESS storage in the local network (e.g. 192.168.1.150). If left blank, the inverter will be discovered automatically via mDNS/broadcast."
+  ess_password:
+    name: "User Password (Web Password)"
+    description: "Web password of the LG ESS storage. If left blank, the factory default password (LAN MAC address in lowercase) is automatically detected."
+  installer_password:
+    name: "Installer Password (Registration Number)"
+    description: "Installer password for advanced controls (feed-in limitation, safety SoC, etc.). If left blank, the add-on attempts automatic calculation from the serial number."
+  interval_seconds:
+    name: "Poll Interval (Seconds)"
+    description: "Update interval for querying live power and telemetry data from the inverter (default: 5 seconds)."
+  power_unit:
+    name: "Power Unit"
+    description: "Unit for instantaneous power sensor readings (kW or W)."
+    items:
+      kW: "kW (Kilowatt - Default)"
+      W: "W (Watt)"
+  entity_naming:
+    name: "Entity Naming Scheme"
+    description: "Naming scheme for Home Assistant Entity IDs."
+    items:
+      legacy: "Legacy (sensor.actual_grid_buy - compatible with existing dashboards)"
+      modern: "Modern (sensor.aktueller_netzbezug - German localized IDs)"
+  sensor_language:
+    name: "Sensor Language"
+    description: "Language used for sensor names and MQTT Auto-Discovery entities."
+    items:
+      auto: "Automatic (adapts to Home Assistant system language)"
+      de: "German (de)"
+      en: "English (en)"
+  auto_create_sensors:
+    name: "Automatically Create Home Assistant Sensors"
+    description: "Automatically sets up clean, pre-configured sensors, switches, number and text entities via MQTT Auto-Discovery."
+  legacy_raw_sensors:
+    name: "Enable Legacy Raw pyess Sensors"
+    description: "Also provides the raw sensor.ess_ess_* telemetry sensors for backwards compatibility with older dashboards."
+  mqtt_server:
+    name: "MQTT Broker Server / Host"
+    description: "Address of the MQTT broker. Can be left empty when using the official Home Assistant Mosquitto broker add-on."
+  mqtt_port:
+    name: "MQTT Broker Port"
+    description: "Network port of the MQTT broker (default: 1883)."
+  mqtt_user:
+    name: "MQTT Username"
+    description: "Username for MQTT authentication (optional with internal Mosquitto broker)."
+  mqtt_password:
+    name: "MQTT Password"
+    description: "Password for MQTT authentication (optional with internal Mosquitto broker)."
+  hass_autoconfig_sensors:
+    name: "Advanced Raw Sensors List (Expert)"
+    description: "Optional comma-separated list of pyess telemetry topics. Leave empty to use the comprehensive default list."

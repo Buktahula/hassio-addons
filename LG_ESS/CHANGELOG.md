@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.19
+- **Verschönerte Add-on-Konfigurationsseite (Lokalisierung & Layout)**:
+  - Vollständige deutsche und englische Übersetzungen für alle Konfigurationsfelder (`translations/de.yaml` und `translations/en.yaml`): Klare Anzeigenamen, detaillierte Hilfetexte und verständliche Dropdown-Beschriftungen statt technischer Variablennamen.
+  - Logische Gruppierung der Einstellungen: Verbindungsparameter (Host, Passwörter) an oberster Stelle, gefolgt von Verhaltens- und Sensoreinstellungen, MQTT-Optionen und Experten-Parametern.
+  - Bereinigung des Standard-Konfigurationsfelds für `hass_autoconfig_sensors`, sodass nicht mehr standardmäßig eine unübersichtliche Textwand angezeigt wird.
+  - Hinzufügen der internen Dokumentationsansicht (`DOCS.md`) direkt im Add-on-Reiter von Home Assistant.
+
 ## 0.1.18
 - **Einspeisebegrenzung / Einspeisemenge im Installateur-Modus steuerbar (`number.feed_in_limitation`)**:
   - Neue Steuerentität `number.feed_in_limitation` (Bereich: 0 % bis 100 %, Schrittweite 1 %): Erlaubt die stufenlose Vorgabe der Wirkleistungseinspeisung / Einspeisebegrenzung direkt aus Home Assistant heraus.

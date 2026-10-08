@@ -1,5 +1,5 @@
 ---
-version: "0.1.18"
+version: "0.1.19"
 slug: lg_ess
 name: "LG ESS"
 image: "buktahula/lgess-{arch}"
@@ -15,34 +15,34 @@ homeassistant_api: true
 services:
   - mqtt:want
 options:
+  ess_host: ""
   ess_password: ""
   installer_password: ""
-  ess_host: ""
+  interval_seconds: 5
+  power_unit: "kW"
+  entity_naming: "legacy"
+  sensor_language: "auto"
+  auto_create_sensors: true
+  legacy_raw_sensors: true
   mqtt_server: ""
   mqtt_port: 1883
   mqtt_user: ""
   mqtt_password: ""
-  interval_seconds: 5
-  auto_create_sensors: true
-  legacy_raw_sensors: true
-  entity_naming: "legacy"
-  sensor_language: "auto"
-  power_unit: "kW"
-  hass_autoconfig_sensors: "ess/common/BATT/soc,ess/home/statistics/pcs_pv_total_power,ess/common/GRID/active_power,ess/common/LOAD/load_power,ess/home/statistics/pcs_pv_total_power,ess/home/statistics/batconv_power,ess/home/statistics/bat_use,ess/home/statistics/bat_status,ess/home/statistics/bat_user_soc,ess/home/statistics/load_power,ess/home/statistics/load_today,ess/home/statistics/grid_power,ess/home/statistics/current_day_self_consumption,ess/home/statistics/current_pv_generation_sum,ess/home/statistics/current_grid_feed_in_energy,ess/home/direction/is_direct_consuming_,ess/home/direction/is_battery_charging_,ess/home/direction/is_battery_discharging_,ess/home/direction/is_grid_selling_,ess/home/direction/is_grid_buying_,ess/home/direction/is_charging_from_grid_,ess/common/PV/brand,ess/common/PV/capacity,ess/common/PV/pv1_voltage,ess/common/PV/pv2_voltage,ess/common/PV/pv3_voltage,ess/common/PV/pv1_power,ess/common/PV/pv2_power,ess/common/PV/pv3_power,ess/common/PV/pv1_current,ess/common/PV/pv2_current,ess/common/PV/pv3_current,ess/common/PV/today_pv_generation_sum,ess/common/PV/today_month_pv_generation_sum,ess/common/BATT/status,ess/common/BATT/soc,ess/common/BATT/dc_power,ess/common/BATT/winter_setting,ess/common/BATT/winter_status,ess/common/BATT/safety_soc,ess/common/BATT/safty_soc,ess/common/BATT/today_batt_discharge_enery,ess/common/BATT/today_batt_charge_energy,ess/common/BATT/month_batt_charge_energy,ess/common/BATT/month_batt_discharge_energy,ess/common/GRID/active_power,ess/common/GRID/a_phase,ess/common/GRID/freq,ess/common/GRID/today_grid_feed_in_energy,ess/common/GRID/today_grid_power_purchase_energy,ess/common/GRID/month_grid_feed_in_energy,ess/common/GRID/month_grid_power_purchase_energy,ess/common/LOAD/load_power,ess/common/LOAD/today_load_consumption_sum,ess/common/LOAD/today_pv_direct_consumption_enegy,ess/common/LOAD/today_batt_discharge_enery,ess/common/LOAD/today_grid_power_purchase_energy,ess/common/LOAD/month_load_consumption_sum,ess/common/LOAD/month_pv_direct_consumption_energy,ess/common/LOAD/month_batt_discharge_energy,ess/common/LOAD/month_grid_power_purchase_energy,ess/common/PCS/today_self_consumption,ess/common/PCS/month_co2_reduction_accum,ess/common/PCS/today_pv_generation_sum,ess/common/PCS/month_pv_generation_sum,ess/common/PCS/today_grid_feed_in_energy,ess/common/PCS/month_grid_feed_in_energy,ess/common/PCS/pcs_stauts,ess/common/PCS/feed_in_limitation,ess/common/PCS/operation_mode"
+  hass_autoconfig_sensors: ""
 schema:
+  ess_host: str?
   ess_password: password?
   installer_password: password?
-  ess_host: str?
+  interval_seconds: int(1,600)
+  power_unit: list(kW|W)?
+  entity_naming: list(legacy|modern)?
+  sensor_language: list(auto|de|en)?
+  auto_create_sensors: bool?
+  legacy_raw_sensors: bool?
   mqtt_server: str?
   mqtt_port: int(1,65535)?
   mqtt_user: str?
   mqtt_password: password?
-  interval_seconds: int(1,600)
-  auto_create_sensors: bool?
-  legacy_raw_sensors: bool?
-  entity_naming: list(legacy|modern)?
-  sensor_language: list(auto|de|en)?
-  power_unit: list(kW|W)?
   hass_autoconfig_sensors: str?
 startup: services
 init: false

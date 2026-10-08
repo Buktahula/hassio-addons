@@ -1,0 +1,53 @@
+configuration:
+  ess_host:
+    name: "LG ESS IP-Adresse / Host"
+    description: "Optionale IP-Adresse oder Hostname des LG ESS Speichers im lokalen Netzwerk (z. B. 192.168.1.150). Bleibt dieses Feld leer, wird der Speicher automatisch per mDNS/Broadcast im Netzwerk gesucht."
+  ess_password:
+    name: "Benutzer-Passwort (Web-Kennwort)"
+    description: "Benutzer-Passwort der Web-Oberfläche. Bleibt das Feld leer, ermittelt das Add-on das werkseitige Standard-Passwort (LAN-MAC-Adresse in Kleinbuchstaben) vollautomatisch."
+  installer_password:
+    name: "Installateur-Passwort (Registrierungsnummer)"
+    description: "Installateur-Kennwort für erweiterte Steuerungen (Einspeisebegrenzung, Mindest-Ladezustand, etc.). Bleibt das Feld leer, ermittelt das Add-on das Kennwort automatisch aus der Seriennummer."
+  interval_seconds:
+    name: "Abfrage-Intervall (Sekunden)"
+    description: "Aktualisierungsintervall für das Abrufen der Live-Leistungs- und Verbrauchsdaten vom Wechselrichter (Standard: 5 Sekunden)."
+  power_unit:
+    name: "Leistungseinheit"
+    description: "Einheit für momentane Leistungswerte der Sensoren (kW oder W)."
+    items:
+      kW: "kW (Kilowatt - Standard)"
+      W: "W (Watt)"
+  entity_naming:
+    name: "Entitäten-Benennung (Schema)"
+    description: "Namensschema für Home Assistant Entity-IDs."
+    items:
+      legacy: "Klassisch (legacy: sensor.actual_grid_buy - kompatibel mit bestehenden Dashboards)"
+      modern: "Modern (modern: sensor.aktueller_netzbezug - sprechende deutsche IDs)"
+  sensor_language:
+    name: "Sensorsprache"
+    description: "Sprache für Sensornamen und MQTT Auto-Discovery Entitäten."
+    items:
+      auto: "Automatisch (übernimmt die Systemsprache von Home Assistant)"
+      de: "Deutsch (de)"
+      en: "Englisch (en)"
+  auto_create_sensors:
+    name: "Home Assistant Sensoren automatisch anlegen"
+    description: "Erstellt saubere, vorkonfigurierte Sensoren, Schalter, Nummer- und Text-Entitäten via MQTT Auto-Discovery in Home Assistant."
+  legacy_raw_sensors:
+    name: "Klassische pyess-Rohsensoren bereitstellen"
+    description: "Stellt für bestehende Dashboards zusätzlich die unveränderten sensor.ess_ess_* Rohdaten-Sensoren bereit (volle Abwärtskompatibilität)."
+  mqtt_server:
+    name: "MQTT Broker Server / Host"
+    description: "Adresse des MQTT-Brokers. Bei Nutzung des offiziellen Mosquitto-Broker Add-ons kann dieses Feld leer bleiben (automatische Verbindung)."
+  mqtt_port:
+    name: "MQTT Broker Port"
+    description: "Netzwerk-Port des MQTT-Brokers (Standard: 1883)."
+  mqtt_user:
+    name: "MQTT Benutzername"
+    description: "Benutzername für die MQTT-Authentifizierung (kann bei internem Mosquitto-Broker leer bleiben)."
+  mqtt_password:
+    name: "MQTT Passwort"
+    description: "Passwort für die MQTT-Authentifizierung (kann bei internem Mosquitto-Broker leer bleiben)."
+  hass_autoconfig_sensors:
+    name: "Erweiterte Rohdaten-Sensorliste (Experten)"
+    description: "Optionale kommagetrennte Liste spezifischer pyess-Datenpunkte. Leer lassen, um die vollständige Standard-Liste zu verwenden."
