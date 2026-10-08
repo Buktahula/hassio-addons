@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.1.15
+- **Wintermodus-Datumseinstellung ohne Jahreszahl (`text.winter_mode_start` & `text.winter_mode_end`)**:
+  - Wie in der offiziellen LG EnerVu App ist die Wintermodus-Einstellung eine jährlich wiederkehrende Kalenderspanne (nur Tag und Monat).
+  - Umstellung von `date`-Entitäten (die zwingend ein Jahr `YYYY-MM-DD` erzwingen) auf saubere `text`-Entitäten im intuitiven Format `TT.MM.` (z. B. `01.11.` und `28.02.`).
+  - Automatische Bereinigung alter `date`-Discovery-Topics in MQTT, sodass die früheren Jahres-Datumsentitäten in Home Assistant sauber und rückstandslos entfernt werden.
+  - Das Add-on akzeptiert bei Eingaben weiterhin flexible Formate (`01.11.`, `01.11`, `1101` oder ISO) und synchronisiert diese im korrekten 4-stelligen `MMDD`-Format mit dem LG ESS.
+- **Batterie-Ladezustandsuntergrenze (`battery_safety_soc` / Safety SoC)**:
+  - **Neuer Sensor `sensor.battery_safety_soc`**: Zeigt die im Wechselrichter hinterlegte Tiefentladeschutz-Untergrenze (`safty_soc`, üblicherweise 5%, 10% oder 15%) an.
+  - **Neue Steuerentität `number.battery_safety_soc`**: Ermöglicht das Anpassen der Sicherheitsuntergrenze über das Add-on (5% bis 50% in 5%-Schritten).
+  - *Hintergrundinfo*: In der offiziellen Kunden-App ist dieser Wert bewusst gesperrt („Wenden Sie sich an den Installateur“), um die Batteriezellen und Herstellergarantie vor Tiefentladung bei langen winterlichen Standzeiten zu schützen. Sollte der Wechselrichter Änderungen via Nutzer-Rechten abweisen, synchronisiert das Add-on automatisch den echten Hardware-Wert zurück. Für die normale Nutzung zur Reservehaltung im Backup-Betrieb steht weiterhin `number.backup_soc` zur Verfügung.
+
 ## 0.1.14
 - **Wintermodus-Datumseinstellung & Aktivitäts-Status**:
   - **Neue Datums-Entitäten (`date.winter_mode_start` & `date.winter_mode_end`)**:
