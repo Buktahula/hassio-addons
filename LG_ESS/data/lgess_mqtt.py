@@ -60,7 +60,7 @@ DEVICE_INFO = {
     "name": "LG ESS",
     "manufacturer": "LG Electronics",
     "model": "ESS Home",
-    "sw_version": "0.1.14",
+    "sw_version": "1.0.0",
 }
 
 # Sensor definitions with localized names, units, device classes, and extractors

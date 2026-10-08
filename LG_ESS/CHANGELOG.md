@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.0
+- **Offizielles Release 1.0.0 – für Jens ❤️**:
+  - Großes Meilenstein-Release mit voller Unterstützung für LG ESS Solarwechselrichter & Batteriespeicher.
+  - Vollständige Integration von Live-Telemetrie, Energiefluss, Strings 1–3, Tagesstatistiken und KPIs.
+  - Bidirektionale Steuerung: Einspeisebegrenzung (0–100 %), Tiefentladeschutz (Safety SoC), Backup Mindest-SoC, Wintermodus mit Datumsauswahl und 3-Wege-Lademodus (Batteriepflege / Schnellladung / Wettervorhersage).
+  - Vollständig lokalisierte, aufgeräumte Add-on-Konfigurationsmaske (DE/EN) und integrierte Dokumentation.
+
 ## 0.1.19
 - **Verschönerte Add-on-Konfigurationsseite (Lokalisierung & Layout)**:
   - Vollständige deutsche und englische Übersetzungen für alle Konfigurationsfelder (`translations/de.yaml` und `translations/en.yaml`): Klare Anzeigenamen, detaillierte Hilfetexte und verständliche Dropdown-Beschriftungen statt technischer Variablennamen.
